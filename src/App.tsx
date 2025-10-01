@@ -1,4 +1,3 @@
-import React from 'react'
 import { Header } from './components/layout/Header'
 import { LoginForm } from './components/auth/LoginForm'
 import { MemberDashboard } from './components/dashboard/MemberDashboard'
@@ -10,7 +9,7 @@ import { useTenant } from './hooks/useTenant'
 
 function App() {
   const { user, loading: authLoading } = useAuth()
-  const { organization, loading: tenantLoading, error: tenantError, isSuperAdmin } = useTenant()
+  const { organization, loading: tenantLoading, isSuperAdmin } = useTenant()
 
   // Show loading state while checking auth and tenant
   if (authLoading || tenantLoading) {
