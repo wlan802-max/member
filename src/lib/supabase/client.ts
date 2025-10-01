@@ -311,6 +311,120 @@ export type Database = {
           updated_at?: string
         }
       }
+      organization_membership_types: {
+        Row: {
+          id: string
+          organization_id: string
+          code: string
+          name: string
+          description: string | null
+          price: number
+          is_default: boolean
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          code: string
+          name: string
+          description?: string | null
+          price?: number
+          is_default?: boolean
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          code?: string
+          name?: string
+          description?: string | null
+          price?: number
+          is_default?: boolean
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      organization_form_schemas: {
+        Row: {
+          id: string
+          organization_id: string
+          schema_version: number
+          title: string
+          description: string | null
+          schema_data: any
+          is_active: boolean
+          created_at: string
+          created_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          schema_version?: number
+          title?: string
+          description?: string | null
+          schema_data: any
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          schema_version?: number
+          title?: string
+          description?: string | null
+          schema_data?: any
+          is_active?: boolean
+          created_at?: string
+          created_by?: string | null
+          updated_at?: string
+        }
+      }
+      profile_form_responses: {
+        Row: {
+          id: string
+          profile_id: string
+          organization_id: string
+          schema_id: string | null
+          schema_version: number | null
+          response_data: any
+          selected_membership_types: string[]
+          total_amount: number
+          submitted_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          organization_id: string
+          schema_id?: string | null
+          schema_version?: number | null
+          response_data?: any
+          selected_membership_types?: string[]
+          total_amount?: number
+          submitted_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          organization_id?: string
+          schema_id?: string | null
+          schema_version?: number | null
+          response_data?: any
+          selected_membership_types?: string[]
+          total_amount?: number
+          submitted_at?: string
+        }
+      }
     }
   }
 }

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { useTenant } from '@/hooks/useTenant'
+import { SignupFormEnhanced } from './SignupFormEnhanced'
 import { Mail, Lock, AlertCircle } from 'lucide-react'
 
 export function LoginForm() {
@@ -98,6 +99,19 @@ export function LoginForm() {
         </Card>
       </div>
     )
+  }
+
+  if (mode === 'signup') {
+    return (
+      <SignupFormEnhanced
+        organizationId={organization.id}
+        organizationName={organization.name}
+        organizationSlug={organization.slug}
+        logoUrl={organization.logo_url}
+        primaryColor={organization.primary_color}
+        onBackToLogin={() => setMode('login')}
+      />
+    );
   }
 
   return (
