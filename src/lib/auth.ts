@@ -8,7 +8,7 @@ export interface User {
     first_name: string
     last_name: string
     role: string
-    organization: {
+    organization?: {
       id: string
       name: string
       slug: string

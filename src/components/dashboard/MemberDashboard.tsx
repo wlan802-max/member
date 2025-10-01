@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTenant } from '@/hooks/useTenant'
 import { supabase } from '@/lib/supabase/client'
 import DOMPurify from 'dompurify'
+import { toast } from 'sonner'
 import { 
   CreditCard, 
   Calendar, 
@@ -48,35 +49,43 @@ export function MemberDashboard() {
   }, [isAdmin])
 
   useEffect(() => {
-    // For demo purposes, we'll create some mock data since Supabase isn't connected
-    const mockMemberships: Membership[] = [
-      {
-        id: '1',
-        membership_year: 2024,
-        start_date: '2024-04-01',
-        end_date: '2025-03-31',
-        status: 'active',
-        membership_type: 'standard',
-        amount_paid: 50.00,
-        payment_reference: 'PAY-2024-001'
-      },
-      {
-        id: '2',
-        membership_year: 2023,
-        start_date: '2023-04-01',
-        end_date: '2024-03-31',
-        status: 'expired',
-        membership_type: 'standard',
-        amount_paid: 45.00,
-        payment_reference: 'PAY-2023-001'
+    const fetchMemberships = async () => {
+      if (!user?.profile?.id || !organization?.id) {
+        setLoading(false)
+        return
       }
-    ]
-    
-    setTimeout(() => {
-      setMemberships(mockMemberships)
-      setLoading(false)
-    }, 1000)
-  }, [])
+
+      try {
+        const { data, error } = await supabase
+          .from('memberships')
+          .select('*')
+          .eq('organization_id', organization.id)
+          .eq('profile_id', user.profile.id)
+          .order('membership_year', { ascending: false })
+
+        if (error) {
+          console.error('Error fetching memberships:', error)
+          toast.error('Failed to load memberships', {
+            description: error.message
+          })
+          setMemberships([])
+        } else {
+          setMemberships(data || [])
+          if (data && data.length > 0) {
+            toast.success('Memberships loaded')
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching memberships:', err)
+        toast.error('Failed to load memberships')
+        setMemberships([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMemberships()
+  }, [user, organization])
 
   const currentMembership = memberships.find(m => {
     const now = new Date()
