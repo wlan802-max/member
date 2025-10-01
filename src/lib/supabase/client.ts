@@ -158,6 +158,53 @@ export type Database = {
           updated_at?: string
         }
       }
+      events: {
+        Row: {
+          id: string
+          organization_id: string
+          title: string
+          description: string | null
+          location: string | null
+          start_date: string
+          end_date: string | null
+          is_published: boolean
+          registration_url: string | null
+          max_attendees: number | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          title: string
+          description?: string | null
+          location?: string | null
+          start_date: string
+          end_date?: string | null
+          is_published?: boolean
+          registration_url?: string | null
+          max_attendees?: number | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          title?: string
+          description?: string | null
+          location?: string | null
+          start_date?: string
+          end_date?: string | null
+          is_published?: boolean
+          registration_url?: string | null
+          max_attendees?: number | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

@@ -1176,7 +1176,77 @@ interface EventsViewProps {
   onBack: () => void;
 }
 
+interface Event {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  start_date: string;
+  end_date: string | null;
+  registration_url: string | null;
+  max_attendees: number | null;
+}
+
 function EventsView({ organizationId, onBack }: EventsViewProps) {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [organizationId]);
+
+  const fetchEvents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('is_published', true)
+        .gte('end_date', new Date().toISOString())
+        .order('start_date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching events:', error);
+        toast.error('Failed to load events', {
+          description: error.message
+        });
+        setEvents([]);
+      } else {
+        setEvents(data || []);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching events:', err);
+      toast.error('Failed to load events');
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatEventDate = (startDate: string, endDate: string | null) => {
+    const start = new Date(startDate);
+    const formattedStart = start.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    if (!endDate) return formattedStart;
+
+    const end = new Date(endDate);
+    const formattedEnd = end.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    return `${formattedStart} - ${formattedEnd}`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1195,20 +1265,60 @@ function EventsView({ organizationId, onBack }: EventsViewProps) {
           <CardDescription>View organization events and activities</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium mb-2">Events Feature Coming Soon</h3>
-            <p className="text-gray-600 mb-4">
-              The events feature will allow you to view and register for organization events.
-            </p>
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-left max-w-2xl mx-auto">
-              <p className="font-medium mb-2">Database Setup Required:</p>
-              <p className="text-gray-700">
-                To enable events, create an <code className="bg-white px-1 rounded">events</code> table in Supabase with columns for:
-                title, description, location, start_date, end_date, organization_id, registration_url, etc.
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading events...</p>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="text-center py-12">
+              <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium mb-2">No Upcoming Events</h3>
+              <p className="text-gray-600">
+                There are currently no upcoming events scheduled.
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {events.map((event) => (
+                <div key={event.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow" data-testid={`event-card-${event.id}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold">{event.title}</h3>
+                    {event.registration_url && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => window.open(event.registration_url!, '_blank')}
+                        data-testid={`button-register-${event.id}`}
+                      >
+                        Register
+                      </Button>
+                    )}
+                  </div>
+                  {event.description && (
+                    <p className="text-gray-600 mb-2">{event.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {formatEventDate(event.start_date, event.end_date)}
+                    </div>
+                    {event.location && (
+                      <div className="flex items-center gap-1">
+                        <span>📍</span>
+                        {event.location}
+                      </div>
+                    )}
+                    {event.max_attendees && (
+                      <div className="flex items-center gap-1">
+                        <span>👥</span>
+                        Max {event.max_attendees} attendees
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
