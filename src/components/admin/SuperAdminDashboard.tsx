@@ -28,7 +28,12 @@ export function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showViewDetails, setShowViewDetails] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     fetchOrganizations();
@@ -85,6 +90,76 @@ export function SuperAdminDashboard() {
 
   const totalMembers = organizations.reduce((sum, org) => sum + (org.member_count || 0), 0);
   const activeOrganizations = organizations.filter(org => org.is_active).length;
+
+  const handleEditOrg = async (org: Organization) => {
+    setSelectedOrg(org);
+    setShowEditForm(true);
+  };
+
+  const handleViewOrg = (org: Organization) => {
+    setSelectedOrg(org);
+    setShowViewDetails(true);
+  };
+
+  const handleDeleteClick = (org: Organization) => {
+    setSelectedOrg(org);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteOrg = async () => {
+    if (!selectedOrg) return;
+    
+    setActionLoading(true);
+    try {
+      const { error: deleteError } = await supabase
+        .from('organizations')
+        .update({ is_active: false })
+        .eq('id', selectedOrg.id);
+
+      if (deleteError) throw deleteError;
+
+      await fetchOrganizations();
+      setShowDeleteConfirm(false);
+      setSelectedOrg(null);
+    } catch (error) {
+      console.error('Error deactivating organization:', error);
+      setError(`Failed to deactivate organization: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateOrg = async (formData: Partial<Organization>) => {
+    if (!selectedOrg) return;
+
+    setActionLoading(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({
+          name: formData.name,
+          slug: formData.slug,
+          domain: formData.domain,
+          contact_email: formData.contact_email,
+          contact_phone: formData.contact_phone,
+          primary_color: formData.primary_color,
+          secondary_color: formData.secondary_color,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedOrg.id);
+
+      if (updateError) throw updateError;
+
+      await fetchOrganizations();
+      setShowEditForm(false);
+      setSelectedOrg(null);
+    } catch (error) {
+      console.error('Error updating organization:', error);
+      setError(`Failed to update organization: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -269,7 +344,7 @@ export function SuperAdminDashboard() {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => alert(`Viewing organization: ${org.name}\nSlug: ${org.slug}\nMembers: ${org.member_count || 0}`)}
+                    onClick={() => handleViewOrg(org)}
                     data-testid={`button-view-org-${org.id}`}
                   >
                     <Eye className="h-3 w-3 mr-1" />
@@ -278,7 +353,7 @@ export function SuperAdminDashboard() {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => alert(`Edit organization: ${org.name}\n(Feature coming soon)`)}
+                    onClick={() => handleEditOrg(org)}
                     data-testid={`button-edit-org-${org.id}`}
                   >
                     <Edit className="h-3 w-3 mr-1" />
@@ -288,11 +363,7 @@ export function SuperAdminDashboard() {
                     size="sm" 
                     variant="outline" 
                     className="text-red-600 hover:text-red-700"
-                    onClick={() => {
-                      if (confirm(`Are you sure you want to delete "${org.name}"?`)) {
-                        alert('Delete functionality coming soon!')
-                      }
-                    }}
+                    onClick={() => handleDeleteClick(org)}
                     data-testid={`button-delete-org-${org.id}`}
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
@@ -305,7 +376,7 @@ export function SuperAdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* Create Organization Modal would go here */}
+      {/* Create Organization Modal */}
       {showCreateForm && (
         <CreateOrganizationModal 
           onClose={() => setShowCreateForm(false)}
@@ -313,6 +384,43 @@ export function SuperAdminDashboard() {
             setShowCreateForm(false);
             fetchOrganizations();
           }}
+        />
+      )}
+
+      {/* Edit Organization Modal */}
+      {showEditForm && selectedOrg && (
+        <EditOrganizationModal
+          organization={selectedOrg}
+          onClose={() => {
+            setShowEditForm(false);
+            setSelectedOrg(null);
+          }}
+          onSave={(formData) => handleUpdateOrg(formData)}
+          loading={actionLoading}
+        />
+      )}
+
+      {/* View Details Modal */}
+      {showViewDetails && selectedOrg && (
+        <ViewOrganizationModal
+          organization={selectedOrg}
+          onClose={() => {
+            setShowViewDetails(false);
+            setSelectedOrg(null);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedOrg && (
+        <DeleteConfirmModal
+          organizationName={selectedOrg.name}
+          onConfirm={handleDeleteOrg}
+          onCancel={() => {
+            setShowDeleteConfirm(false);
+            setSelectedOrg(null);
+          }}
+          loading={actionLoading}
         />
       )}
     </div>
@@ -461,6 +569,248 @@ function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizationModal
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface EditOrganizationModalProps {
+  organization: Organization;
+  onClose: () => void;
+  onSave: (formData: Partial<Organization>) => void;
+  loading: boolean;
+}
+
+function EditOrganizationModal({ organization, onClose, onSave, loading }: EditOrganizationModalProps) {
+  const [formData, setFormData] = useState({
+    name: organization.name,
+    slug: organization.slug,
+    domain: organization.domain || '',
+    contact_email: organization.contact_email,
+    contact_phone: organization.contact_phone || '',
+    primary_color: organization.primary_color,
+    secondary_color: organization.secondary_color
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-edit-organization">
+      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <CardTitle>Edit Organization</CardTitle>
+          <CardDescription>Update organization details</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Organization Name</label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  data-testid="input-org-name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Slug</label>
+                <Input
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                  required
+                  data-testid="input-org-slug"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Domain</label>
+              <Input
+                value={formData.domain}
+                onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                placeholder="organization.com"
+                data-testid="input-org-domain"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Contact Email</label>
+                <Input
+                  type="email"
+                  value={formData.contact_email}
+                  onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                  required
+                  data-testid="input-org-email"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Contact Phone</label>
+                <Input
+                  value={formData.contact_phone}
+                  onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                  data-testid="input-org-phone"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Primary Color</label>
+                <Input
+                  type="color"
+                  value={formData.primary_color}
+                  onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
+                  data-testid="input-org-primary-color"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Secondary Color</label>
+                <Input
+                  type="color"
+                  value={formData.secondary_color}
+                  onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
+                  data-testid="input-org-secondary-color"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading} data-testid="button-cancel-edit">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} data-testid="button-save-edit">
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface ViewOrganizationModalProps {
+  organization: Organization;
+  onClose: () => void;
+}
+
+function ViewOrganizationModal({ organization, onClose }: ViewOrganizationModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-view-organization">
+      <Card className="w-full max-w-2xl mx-4">
+        <CardHeader>
+          <CardTitle>{organization.name}</CardTitle>
+          <CardDescription>Organization Details</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Slug</label>
+              <p className="mt-1" data-testid="text-org-slug">{organization.slug}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Domain</label>
+              <p className="mt-1" data-testid="text-org-domain">{organization.domain || 'Not set'}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Contact Email</label>
+              <p className="mt-1" data-testid="text-org-email">{organization.contact_email}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Contact Phone</label>
+              <p className="mt-1" data-testid="text-org-phone">{organization.contact_phone || 'Not set'}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Members</label>
+              <p className="mt-1" data-testid="text-org-members">{organization.member_count || 0}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Status</label>
+              <p className="mt-1">
+                <Badge variant={organization.is_active ? 'default' : 'secondary'} data-testid="badge-org-status">
+                  {organization.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-500">Primary Color</label>
+              <div className="flex items-center gap-2 mt-1">
+                <div
+                  className="w-8 h-8 rounded border"
+                  style={{ backgroundColor: organization.primary_color }}
+                />
+                <span data-testid="text-org-primary-color">{organization.primary_color}</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">Secondary Color</label>
+              <div className="flex items-center gap-2 mt-1">
+                <div
+                  className="w-8 h-8 rounded border"
+                  style={{ backgroundColor: organization.secondary_color }}
+                />
+                <span data-testid="text-org-secondary-color">{organization.secondary_color}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <Button onClick={onClose} data-testid="button-close-view">Close</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface DeleteConfirmModalProps {
+  organizationName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+function DeleteConfirmModal({ organizationName, onConfirm, onCancel, loading }: DeleteConfirmModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-delete-confirm">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader>
+          <CardTitle className="text-red-600">Deactivate Organization</CardTitle>
+          <CardDescription>
+            This action will deactivate the organization and prevent users from accessing it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm">
+            Are you sure you want to deactivate <strong>{organizationName}</strong>?
+          </p>
+          <p className="text-sm text-gray-600">
+            Members will no longer be able to access this organization. You can reactivate it later from the organization settings.
+          </p>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={onCancel} disabled={loading} data-testid="button-cancel-delete">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={onConfirm} disabled={loading} data-testid="button-confirm-delete">
+              {loading ? 'Deactivating...' : 'Deactivate Organization'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
