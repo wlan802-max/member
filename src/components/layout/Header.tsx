@@ -55,7 +55,7 @@ export function Header() {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => alert('Admin panel coming soon!')}
+                    onClick={() => window.location.hash = 'admin'}
                     data-testid="button-admin"
                   >
                     <Settings className="h-4 w-4 mr-2" />

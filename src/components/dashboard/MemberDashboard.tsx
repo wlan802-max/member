@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { useTenant } from '@/hooks/useTenant'
 import { supabase } from '@/lib/supabase/client'
@@ -30,11 +31,20 @@ interface Membership {
 }
 
 export function MemberDashboard() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings'>('dashboard')
+
+  useEffect(() => {
+    // Check URL hash for navigation
+    const hash = window.location.hash.replace('#', '')
+    if (hash === 'admin' && isAdmin) {
+      setActiveView('admin-members')
+      window.location.hash = '' // Clear hash after navigation
+    }
+  }, [isAdmin])
 
   useEffect(() => {
     // For demo purposes, we'll create some mock data since Supabase isn't connected
@@ -133,8 +143,56 @@ export function MemberDashboard() {
         </p>
       </div>
 
-      {/* Current Membership Status */}
-      {currentMembership ? (
+      {/* Tab Navigation */}
+      {(isAdmin || activeView !== 'dashboard') && (
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="flex gap-4">
+            <button
+              onClick={() => setActiveView('dashboard')}
+              className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'dashboard'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-dashboard"
+            >
+              Dashboard
+            </button>
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => setActiveView('admin-members')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-members'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-members"
+                >
+                  Members
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-settings')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-settings'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-settings"
+                >
+                  Organization Settings
+                </button>
+              </>
+            )}
+          </nav>
+        </div>
+      )}
+
+      {/* Dashboard View */}
+      {activeView === 'dashboard' && (
+        <div>
+          {/* Current Membership Status */}
+          {currentMembership ? (
         <div className="mb-8">
           <Card className="border-l-4" style={{ borderLeftColor: organization?.primary_color || '#3B82F6' }}>
             <CardHeader>
@@ -351,6 +409,532 @@ export function MemberDashboard() {
           </div>
         </CardContent>
       </Card>
+        </div>
+      )}
+
+      {/* Admin - Members View */}
+      {activeView === 'admin-members' && isAdmin && (
+        <MembersAdminView organizationId={organization?.id || ''} />
+      )}
+
+      {/* Admin - Settings View */}
+      {activeView === 'admin-settings' && isAdmin && organization && (
+        <SettingsAdminView organization={organization} />
+      )}
     </div>
   )
+}
+
+// Members Admin View Component
+interface MembersAdminViewProps {
+  organizationId: string;
+}
+
+function MembersAdminView({ organizationId }: MembersAdminViewProps) {
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const [showEditMember, setShowEditMember] = useState(false);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [organizationId]);
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (memberId: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !isActive })
+        .eq('id', memberId);
+
+      if (error) throw error;
+      await fetchMembers();
+    } catch (error) {
+      console.error('Error toggling member status:', error);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading members...</div>;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Members Management</CardTitle>
+            <CardDescription>Manage organization members and their access</CardDescription>
+          </div>
+          <Button onClick={() => setShowAddMember(true)} data-testid="button-add-member">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Member
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {members.map((member) => (
+            <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`member-row-${member.id}`}>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium">{member.first_name} {member.last_name}</h3>
+                  <Badge variant={member.is_active ? 'default' : 'secondary'}>
+                    {member.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                  <Badge variant="outline">{member.role}</Badge>
+                </div>
+                <p className="text-sm text-gray-600">{member.email}</p>
+                {member.phone && <p className="text-xs text-gray-500">{member.phone}</p>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedMember(member);
+                    setShowEditMember(true);
+                  }}
+                  data-testid={`button-edit-member-${member.id}`}
+                >
+                  Edit
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={member.is_active ? 'outline' : 'default'}
+                  onClick={() => handleToggleActive(member.id, member.is_active)}
+                  data-testid={`button-toggle-member-${member.id}`}
+                >
+                  {member.is_active ? 'Deactivate' : 'Activate'}
+                </Button>
+              </div>
+            </div>
+          ))}
+          {members.length === 0 && (
+            <p className="text-center text-gray-500 py-8">No members found</p>
+          )}
+        </div>
+      </CardContent>
+
+      {showAddMember && (
+        <AddMemberModal
+          organizationId={organizationId}
+          onClose={() => setShowAddMember(false)}
+          onSuccess={() => {
+            setShowAddMember(false);
+            fetchMembers();
+          }}
+        />
+      )}
+
+      {showEditMember && selectedMember && (
+        <EditMemberModal
+          member={selectedMember}
+          onClose={() => {
+            setShowEditMember(false);
+            setSelectedMember(null);
+          }}
+          onSuccess={() => {
+            setShowEditMember(false);
+            setSelectedMember(null);
+            fetchMembers();
+          }}
+        />
+      )}
+    </Card>
+  );
+}
+
+// Settings Admin View Component
+interface SettingsAdminViewProps {
+  organization: any;
+}
+
+function SettingsAdminView({ organization }: SettingsAdminViewProps) {
+  const [formData, setFormData] = useState({
+    name: organization.name || '',
+    contact_email: organization.contact_email || '',
+    contact_phone: organization.contact_phone || '',
+    primary_color: organization.primary_color || '#3B82F6',
+    secondary_color: organization.secondary_color || '#1E40AF'
+  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          name: formData.name,
+          contact_email: formData.contact_email,
+          contact_phone: formData.contact_phone,
+          primary_color: formData.primary_color,
+          secondary_color: formData.secondary_color,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', organization.id);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Settings saved successfully! Reload the page to see changes.' });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setMessage({ type: 'error', text: 'Failed to save settings. Please try again.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Organization Settings</CardTitle>
+        <CardDescription>Update organization branding and contact information</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {message && (
+          <div className={`p-3 rounded ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            {message.text}
+          </div>
+        )}
+
+        <div>
+          <label className="text-sm font-medium">Organization Name</label>
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            data-testid="input-org-name"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">Contact Email</label>
+            <Input
+              type="email"
+              value={formData.contact_email}
+              onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+              data-testid="input-contact-email"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Contact Phone</label>
+            <Input
+              value={formData.contact_phone}
+              onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+              data-testid="input-contact-phone"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium">Primary Color</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="color"
+                value={formData.primary_color}
+                onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
+                className="w-20"
+                data-testid="input-primary-color"
+              />
+              <span className="text-sm text-gray-600">{formData.primary_color}</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Secondary Color</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="color"
+                value={formData.secondary_color}
+                onChange={(e) => setFormData({ ...formData, secondary_color: e.target.value })}
+                className="w-20"
+                data-testid="input-secondary-color"
+              />
+              <span className="text-sm text-gray-600">{formData.secondary_color}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-4">
+          <Button onClick={handleSave} disabled={saving} data-testid="button-save-settings">
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Add Member Modal
+interface AddMemberModalProps {
+  organizationId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AddMemberModal({ organizationId: _organizationId, onClose, onSuccess: _onSuccess }: AddMemberModalProps) {
+  const [formData, setFormData] = useState({
+    email: '',
+    first_name: '',
+    last_name: '',
+    phone: '',
+    role: 'member'
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Note: In a real implementation, you would also create a Supabase Auth user
+      // For now, we'll just create the profile (this will fail without a user_id)
+      alert('Add member functionality requires Supabase Auth integration. Please create the user in Supabase Auth first, then add their profile here.');
+      onClose();
+    } catch (err) {
+      console.error('Error adding member:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-add-member">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader>
+          <CardTitle>Add New Member</CardTitle>
+          <CardDescription>Create a new member account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">First Name</label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  required
+                  data-testid="input-first-name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Last Name</label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  required
+                  data-testid="input-last-name"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                data-testid="input-email"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Phone (optional)</label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                data-testid="input-phone"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Role</label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full p-2 border rounded"
+                data-testid="select-role"
+              >
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading} data-testid="button-cancel-add">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} data-testid="button-submit-add">
+                {loading ? 'Adding...' : 'Add Member'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Edit Member Modal
+interface EditMemberModalProps {
+  member: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function EditMemberModal({ member, onClose, onSuccess }: EditMemberModalProps) {
+  const [formData, setFormData] = useState({
+    first_name: member.first_name || '',
+    last_name: member.last_name || '',
+    email: member.email || '',
+    phone: member.phone || '',
+    role: member.role || 'member'
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', member.id);
+
+      if (updateError) throw updateError;
+
+      onSuccess();
+    } catch (err) {
+      console.error('Error updating member:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-edit-member">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader>
+          <CardTitle>Edit Member</CardTitle>
+          <CardDescription>Update member information</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">First Name</label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  required
+                  data-testid="input-edit-first-name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Last Name</label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  required
+                  data-testid="input-edit-last-name"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                data-testid="input-edit-email"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                data-testid="input-edit-phone"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Role</label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full p-2 border rounded"
+                data-testid="select-edit-role"
+              >
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading} data-testid="button-cancel-edit-member">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} data-testid="button-submit-edit-member">
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
