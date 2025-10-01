@@ -51,9 +51,10 @@ export function LoginForm() {
   }
 
   const handleOrgChange = (orgSlug: string) => {
-    setSelectedOrg(orgSlug)
-    const newUrl = `${window.location.origin}?org=${orgSlug}`
-    window.location.href = newUrl
+    // Navigate to the same page with the org parameter
+    const url = new URL(window.location.href)
+    url.searchParams.set('org', orgSlug)
+    window.location.href = url.toString()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,12 +113,13 @@ export function LoginForm() {
                   <button
                     key={org.slug}
                     onClick={() => handleOrgChange(org.slug)}
+                    data-testid={`button-select-org-${org.slug}`}
                     className="w-full p-4 text-left border rounded-lg hover:bg-blue-50 hover:border-blue-500 transition-colors flex items-center space-x-3"
                   >
                     <Building2 className="h-5 w-5 text-gray-600" />
                     <div>
-                      <div className="font-medium">{org.name}</div>
-                      <div className="text-sm text-gray-500">@{org.slug}</div>
+                      <div className="font-medium" data-testid={`text-org-name-${org.slug}`}>{org.name}</div>
+                      <div className="text-sm text-gray-500" data-testid={`text-org-slug-${org.slug}`}>@{org.slug}</div>
                     </div>
                   </button>
                 ))
