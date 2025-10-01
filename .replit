@@ -1,7 +1,6 @@
 modules = ["nodejs-20", "bash", "web", "postgresql-16"]
 [agent]
 expertMode = true
-integrations = ["resend:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
@@ -38,6 +37,10 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 35897
+externalPort = 3001
 
 [[ports]]
 localPort = 45425

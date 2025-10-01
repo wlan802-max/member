@@ -813,31 +813,56 @@ function AddMemberModal({ organizationId, onClose, onSuccess }: AddMemberModalPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-add-member">
-      <Card className="w-full max-w-md mx-4">
-        <CardHeader>
-          <CardTitle>Add New Member</CardTitle>
-          <CardDescription>Create a new member account</CardDescription>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="modal-add-member">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl">Add New Member</CardTitle>
+          <CardDescription>Create a new member or admin account for this organization</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-            <p className="font-medium mb-1">Note:</p>
-            <p>The user must first sign up with Supabase Auth. After they sign up, you can add their profile here using their User ID from the Supabase Auth dashboard.</p>
+        <CardContent className="space-y-6">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <span className="text-lg">ℹ️</span> How to Add Members
+            </p>
+            <ol className="space-y-2 text-sm text-blue-800">
+              <li className="flex gap-2">
+                <span className="font-bold">1.</span>
+                <span>Ask the user to create an account by visiting your organization's login page and clicking "Sign Up"</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold">2.</span>
+                <span>After they sign up, go to your <strong>Supabase Dashboard → Authentication → Users</strong></span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold">3.</span>
+                <span>Find their user record and copy their <strong>User ID</strong> (UUID format)</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold">4.</span>
+                <span>Enter the User ID and their details below, then select their role (Member or Admin)</span>
+              </li>
+            </ol>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">User ID (from Supabase Auth)</label>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">
+                User ID (from Supabase Auth) *
+              </label>
               <Input
                 value={formData.user_id}
                 onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                placeholder="Enter Supabase Auth user_id"
+                placeholder="e.g., 123e4567-e89b-12d3-a456-426614174000"
                 required
+                className="font-mono text-sm"
                 data-testid="input-user-id"
               />
+              <p className="text-xs text-gray-500">
+                Get this from Supabase Dashboard → Authentication → Users
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">First Name</label>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">First Name *</label>
                 <Input
                   value={formData.first_name}
                   onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
@@ -845,8 +870,8 @@ function AddMemberModal({ organizationId, onClose, onSuccess }: AddMemberModalPr
                   data-testid="input-first-name"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium">Last Name</label>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Last Name *</label>
                 <Input
                   value={formData.last_name}
                   onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
@@ -856,8 +881,8 @@ function AddMemberModal({ organizationId, onClose, onSuccess }: AddMemberModalPr
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Email</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Email Address *</label>
               <Input
                 type="email"
                 value={formData.email}
@@ -867,40 +892,57 @@ function AddMemberModal({ organizationId, onClose, onSuccess }: AddMemberModalPr
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Phone (optional)</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Phone Number</label>
               <Input
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="Optional"
                 data-testid="input-phone"
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Role</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Role *</label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 data-testid="select-role"
               >
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
+                <option value="member">Member - Can view their profile and memberships</option>
+                <option value="admin">Admin - Can manage members and organization settings</option>
               </select>
+              <p className="text-xs text-gray-500">
+                Admins have full access to manage the organization
+              </p>
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                {error}
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="font-semibold text-red-900 mb-1">Error</p>
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading} data-testid="button-cancel-add">
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose} 
+                disabled={loading} 
+                data-testid="button-cancel-add"
+                size="lg"
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading} data-testid="button-submit-add">
-                {loading ? 'Adding...' : 'Add Member'}
+              <Button 
+                type="submit" 
+                disabled={loading} 
+                data-testid="button-submit-add"
+                size="lg"
+              >
+                {loading ? 'Adding Member...' : 'Add Member'}
               </Button>
             </div>
           </form>
