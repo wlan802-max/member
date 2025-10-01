@@ -4,6 +4,7 @@ import { MemberDashboard } from './components/dashboard/MemberDashboard'
 import { SuperAdminLayout } from './components/admin/SuperAdminLayout'
 import { SuperAdminDashboard } from './components/admin/SuperAdminDashboard'
 import { SuperAdminAuth } from './components/admin/SuperAdminAuth'
+import { Toaster } from './components/ui/sonner'
 import { useAuth } from './hooks/useAuth'
 import { useTenant } from './hooks/useTenant'
 
@@ -54,9 +55,12 @@ function App() {
     
     console.log('Showing super admin dashboard')
     return (
-      <SuperAdminLayout>
-        <SuperAdminDashboard />
-      </SuperAdminLayout>
+      <>
+        <SuperAdminLayout>
+          <SuperAdminDashboard />
+        </SuperAdminLayout>
+        <Toaster />
+      </>
     )
   }
 
@@ -102,12 +106,15 @@ function App() {
 
   // Show main application
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main>
-        <MemberDashboard />
-      </main>
-    </div>
+    <>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main>
+          <MemberDashboard />
+        </main>
+      </div>
+      <Toaster />
+    </>
   )
 }
 
