@@ -1,0 +1,46 @@
+index-F3SoFthx.js:78 Current hostname: admin.member.ringing.org.uk
+index-F3SoFthx.js:78 Hostname parts: Array(5)
+index-F3SoFthx.js:78 Production mode, detected subdomain: admin
+index-F3SoFthx.js:78 useAuth: Starting auth check
+index-F3SoFthx.js:78 Loading organization...
+index-F3SoFthx.js:78 Checking if super admin subdomain for hostname: admin.member.ringing.org.uk
+index-F3SoFthx.js:78 Production mode, is admin: true
+index-F3SoFthx.js:78 Detected super admin subdomain
+index-F3SoFthx.js:78 Current hostname: admin.member.ringing.org.uk
+index-F3SoFthx.js:78 Hostname parts: Array(5)
+index-F3SoFthx.js:78 Production mode, detected subdomain: admin
+index-F3SoFthx.js:78 useAuth: getCurrentUser resolved with user: null
+index-F3SoFthx.js:78 Current hostname: admin.member.ringing.org.uk
+index-F3SoFthx.js:78 Hostname parts: Array(5)
+index-F3SoFthx.js:78 Production mode, detected subdomain: admin
+index-F3SoFthx.js:238 Super admin portal detected, user: null
+index-F3SoFthx.js:238 No user, showing super admin auth
+index-F3SoFthx.js:78 useAuth: Starting auth check
+index-F3SoFthx.js:78 useAuth: Auth state changed, user: null
+index-F3SoFthx.js:78 Current hostname: admin.member.ringing.org.uk
+index-F3SoFthx.js:78 Hostname parts: Array(5)
+index-F3SoFthx.js:78 Production mode, detected subdomain: admin
+index-F3SoFthx.js:238 Super admin portal detected, user: null
+index-F3SoFthx.js:238 No user, showing super admin auth
+index-F3SoFthx.js:78 useAuth: getCurrentUser resolved with user: null
+index-F3SoFthx.js:78 useAuth: Auth state changed, user: null
+index-F3SoFthx.js:64 Getting profile for user: 06a91bf8-7754-4f20-80bf-ec4a44999b66
+index-F3SoFthx.js:64 Getting profile for user: 06a91bf8-7754-4f20-80bf-ec4a44999b66
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cstatus%2Corganization_id%2Corganizations%3Aorganization_id%28id%2Cname%2Cslug%2Cprimary_color%2Csecondary_color%29&user_id=eq.06a91bf8-7754-4f20-80bf-ec4a44999b66:1  Failed to load resource: the server responded with a status of 500 ()
+index-F3SoFthx.js:78 Error loading profile: Object
+getCurrentUser @ index-F3SoFthx.js:78
+index-F3SoFthx.js:78 No profile found for user: 06a91bf8-7754-4f20-80bf-ec4a44999b66
+getCurrentUser @ index-F3SoFthx.js:78
+index-F3SoFthx.js:78 useAuth: Auth state changed, user: will@w-j-lander.uk
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cstatus%2Corganization_id%2Corganizations%3Aorganization_id%28id%2Cname%2Cslug%2Cprimary_color%2Csecondary_color%29&user_id=eq.06a91bf8-7754-4f20-80bf-ec4a44999b66:1  Failed to load resource: the server responded with a status of 500 ()
+index-F3SoFthx.js:78 Error loading profile: Object
+getCurrentUser @ index-F3SoFthx.js:78
+index-F3SoFthx.js:78 No profile found for user: 06a91bf8-7754-4f20-80bf-ec4a44999b66
+getCurrentUser @ index-F3SoFthx.js:78
+index-F3SoFthx.js:78 useAuth: Auth state changed, user: will@w-j-lander.uk
+index-F3SoFthx.js:78 Current hostname: admin.member.ringing.org.uk
+index-F3SoFthx.js:78 Hostname parts: Array(5)
+index-F3SoFthx.js:78 Production mode, detected subdomain: admin
+index-F3SoFthx.js:238 Super admin portal detected, user: Object
+index-F3SoFthx.js:238 User profile role: undefined
+index-F3SoFthx.js:238 User is not super admin, showing access denied

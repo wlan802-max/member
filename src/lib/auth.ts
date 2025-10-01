@@ -55,51 +55,53 @@ export const auth = {
 
     console.log('Getting profile for user:', user.id)
 
-    // Get user profile with organization (use left join for super admins who have no org)
-    const { data: profile, error } = await supabase
+    // Get user profile first
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select(`
-        id,
-        first_name,
-        last_name,
-        role,
-        status,
-        organization_id,
-        organizations:organization_id(
-          id,
-          name,
-          slug,
-          primary_color,
-          secondary_color
-        )
-      `)
+      .select('id, first_name, last_name, role, status, organization_id')
       .eq('user_id', user.id)
       .maybeSingle()
 
-    if (error) {
-      console.error('Error loading profile:', error)
+    if (profileError) {
+      console.error('Error loading profile:', profileError)
+      return null
     }
 
     if (!profile) {
       console.warn('No profile found for user:', user.id)
-    } else {
-      const org = Array.isArray(profile.organizations) ? profile.organizations[0] : profile.organizations
-      console.log('Profile loaded:', { role: profile.role, org: org?.slug, has_org: !!profile.organization_id })
+      return null
     }
 
-    const org = Array.isArray(profile?.organizations) ? profile.organizations[0] : profile?.organizations
+    console.log('Profile loaded:', { role: profile.role, has_org: !!profile.organization_id })
+
+    // Get organization separately if profile has one (to avoid join issues with NULL)
+    let organization = undefined
+    if (profile.organization_id) {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('id, name, slug, primary_color, secondary_color')
+        .eq('id', profile.organization_id)
+        .single()
+      
+      if (org) {
+        organization = org
+        console.log('Organization loaded:', org.slug)
+      }
+    } else {
+      console.log('No organization_id (likely super admin)')
+    }
 
     return {
       id: user.id,
       email: user.email!,
-      profile: profile ? {
+      profile: {
         id: profile.id,
         first_name: profile.first_name,
         last_name: profile.last_name,
         role: profile.role,
         status: profile.status,
-        organization: org || undefined
-      } : undefined
+        organization
+      }
     }
   },
 
