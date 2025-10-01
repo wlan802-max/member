@@ -40,10 +40,7 @@ check_root() {
         error "This script should not be run with sudo or as root. Please run as: bash deploy.sh"
     fi
     
-    # Check if user has sudo privileges
-    if ! sudo -n true 2>/dev/null; then
-        warn "This script requires sudo privileges. You may be prompted for your password."
-    fi
+  
 }
 
 # Update system packages
