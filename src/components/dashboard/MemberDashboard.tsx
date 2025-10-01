@@ -21,6 +21,15 @@ import {
   Plus
 } from 'lucide-react'
 
+// Utility function for date formatting
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+}
+
 interface Membership {
   id: string
   membership_year: number
@@ -37,7 +46,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing'>('dashboard')
 
   useEffect(() => {
     // Check URL hash for navigation
@@ -191,6 +200,17 @@ export function MemberDashboard() {
                   data-testid="tab-settings"
                 >
                   Organization Settings
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-mailing')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-mailing'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-mailing"
+                >
+                  Mailing List
                 </button>
               </>
             )}
@@ -450,6 +470,11 @@ export function MemberDashboard() {
       {/* Admin - Settings View */}
       {activeView === 'admin-settings' && isAdmin && organization && (
         <SettingsAdminView organization={organization} />
+      )}
+
+      {/* Admin - Mailing List View */}
+      {activeView === 'admin-mailing' && isAdmin && organization && (
+        <MailingAdminView organizationId={organization.id} />
       )}
     </div>
   )
@@ -1481,6 +1506,557 @@ function MessagesView({ organizationId, onBack }: MessagesViewProps) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Mailing Admin View Component
+interface MailingAdminViewProps {
+  organizationId: string;
+}
+
+function MailingAdminView({ organizationId }: MailingAdminViewProps) {
+  const [tab, setTab] = useState<'subscribers' | 'campaigns'>('subscribers');
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Mailing List Management</h2>
+        <p className="text-gray-600 mt-1">Manage subscribers and email campaigns</p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-4">
+          <button
+            onClick={() => setTab('subscribers')}
+            className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+              tab === 'subscribers'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="tab-subscribers"
+          >
+            Subscribers
+          </button>
+          <button
+            onClick={() => setTab('campaigns')}
+            className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+              tab === 'campaigns'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="tab-campaigns"
+          >
+            Email Campaigns
+          </button>
+        </nav>
+      </div>
+
+      {tab === 'subscribers' && <SubscribersView organizationId={organizationId} />}
+      {tab === 'campaigns' && <CampaignsView organizationId={organizationId} />}
+    </div>
+  );
+}
+
+// Subscribers View Component
+interface SubscribersViewProps {
+  organizationId: string;
+}
+
+interface Subscriber {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  status: string;
+  subscribed_at: string;
+  subscription_source: string | null;
+}
+
+function SubscribersView({ organizationId }: SubscribersViewProps) {
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  useEffect(() => {
+    fetchSubscribers();
+  }, [organizationId]);
+
+  const fetchSubscribers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscribers')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('subscribed_at', { ascending: false });
+
+      if (error) throw error;
+      setSubscribers(data || []);
+      toast.success('Subscribers loaded');
+    } catch (error) {
+      console.error('Error fetching subscribers:', error);
+      toast.error('Failed to load subscribers');
+      setSubscribers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnsubscribe = async (subscriberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('subscribers')
+        .update({
+          status: 'unsubscribed',
+          unsubscribed_at: new Date().toISOString()
+        })
+        .eq('id', subscriberId);
+
+      if (error) throw error;
+      toast.success('Subscriber unsubscribed');
+      fetchSubscribers();
+    } catch (error) {
+      console.error('Error unsubscribing:', error);
+      toast.error('Failed to unsubscribe');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-600 mt-4">Loading subscribers...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-sm text-gray-600">{subscribers.filter(s => s.status === 'subscribed').length} active subscribers</p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)} data-testid="button-add-subscriber">
+          + Add Subscriber
+        </Button>
+      </div>
+
+      {subscribers.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium mb-2">No Subscribers Yet</h3>
+            <p className="text-gray-600 mb-4">
+              Start building your mailing list by adding subscribers.
+            </p>
+            <Button onClick={() => setShowAddModal(true)}>Add First Subscriber</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {subscribers.map((subscriber) => (
+                    <tr key={subscriber.id} data-testid={`subscriber-row-${subscriber.id}`}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{subscriber.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {subscriber.first_name && subscriber.last_name
+                          ? `${subscriber.first_name} ${subscriber.last_name}`
+                          : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge variant={subscriber.status === 'subscribed' ? 'default' : 'secondary'}>
+                          {subscriber.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(subscriber.subscribed_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {subscriber.status === 'subscribed' && (
+                          <button
+                            onClick={() => handleUnsubscribe(subscriber.id)}
+                            className="text-red-600 hover:text-red-900"
+                            data-testid={`button-unsubscribe-${subscriber.id}`}
+                          >
+                            Unsubscribe
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {showAddModal && (
+        <AddSubscriberModal
+          organizationId={organizationId}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false);
+            fetchSubscribers();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Add Subscriber Modal
+interface AddSubscriberModalProps {
+  organizationId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AddSubscriberModal({ organizationId, onClose, onSuccess }: AddSubscriberModalProps) {
+  const [formData, setFormData] = useState({
+    email: '',
+    first_name: '',
+    last_name: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('subscribers')
+        .insert({
+          organization_id: organizationId,
+          email: formData.email,
+          first_name: formData.first_name || null,
+          last_name: formData.last_name || null,
+          status: 'subscribed',
+          subscribed_at: new Date().toISOString(),
+          subscription_source: 'admin'
+        });
+
+      if (error) throw error;
+
+      toast.success('Subscriber added successfully');
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error adding subscriber:', error);
+      toast.error(error.message || 'Failed to add subscriber');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-add-subscriber">
+      <Card className="w-full max-w-md mx-4">
+        <CardHeader>
+          <CardTitle>Add Subscriber</CardTitle>
+          <CardDescription>Add a new email subscriber to your mailing list</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Email *</label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="subscriber@example.com"
+                required
+                data-testid="input-subscriber-email"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">First Name</label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  placeholder="John"
+                  data-testid="input-subscriber-first-name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Last Name</label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  placeholder="Doe"
+                  data-testid="input-subscriber-last-name"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} className="flex-1" data-testid="button-submit-subscriber">
+                {loading ? 'Adding...' : 'Add Subscriber'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Campaigns View Component
+interface CampaignsViewProps {
+  organizationId: string;
+}
+
+interface Campaign {
+  id: string;
+  title: string;
+  subject: string;
+  status: string;
+  scheduled_at: string | null;
+  sent_at: string | null;
+  recipient_count: number | null;
+  created_at: string;
+}
+
+function CampaignsView({ organizationId }: CampaignsViewProps) {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [organizationId]);
+
+  const fetchCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_campaigns')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setCampaigns(data || []);
+      toast.success('Campaigns loaded');
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      toast.error('Failed to load campaigns');
+      setCampaigns([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-600 mt-4">Loading campaigns...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-600">{campaigns.length} campaigns</p>
+        <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-campaign">
+          + Create Campaign
+        </Button>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Resend Integration Required:</strong> To send email campaigns, set up the Resend integration from the Replit integrations panel. This will allow you to send professional emails to your subscribers.
+        </p>
+      </div>
+
+      {campaigns.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium mb-2">No Campaigns Yet</h3>
+            <p className="text-gray-600 mb-4">
+              Create your first email campaign to communicate with your subscribers.
+            </p>
+            <Button onClick={() => setShowCreateModal(true)}>Create First Campaign</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {campaigns.map((campaign) => (
+            <Card key={campaign.id} data-testid={`campaign-card-${campaign.id}`}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{campaign.title}</CardTitle>
+                    <CardDescription>Subject: {campaign.subject}</CardDescription>
+                  </div>
+                  <Badge variant={
+                    campaign.status === 'sent' ? 'default' :
+                    campaign.status === 'draft' ? 'secondary' : 'secondary'
+                  }>
+                    {campaign.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-medium">Created:</span> {formatDate(campaign.created_at)}
+                  </div>
+                  {campaign.sent_at && (
+                    <div>
+                      <span className="font-medium">Sent:</span> {formatDate(campaign.sent_at)}
+                    </div>
+                  )}
+                  {campaign.recipient_count && (
+                    <div>
+                      <span className="font-medium">Recipients:</span> {campaign.recipient_count}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {showCreateModal && (
+        <CreateCampaignModal
+          organizationId={organizationId}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchCampaigns();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Create Campaign Modal
+interface CreateCampaignModalProps {
+  organizationId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CreateCampaignModal({ organizationId, onClose, onSuccess }: CreateCampaignModalProps) {
+  const [formData, setFormData] = useState({
+    title: '',
+    subject: '',
+    content: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (!user?.profile?.id) {
+        throw new Error('User profile not found');
+      }
+
+      const { error } = await supabase
+        .from('email_campaigns')
+        .insert({
+          organization_id: organizationId,
+          title: formData.title,
+          subject: formData.subject,
+          content: formData.content,
+          status: 'draft',
+          created_by: user.profile.id
+        });
+
+      if (error) throw error;
+
+      toast.success('Campaign created successfully');
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error creating campaign:', error);
+      toast.error(error.message || 'Failed to create campaign');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto" data-testid="modal-create-campaign">
+      <Card className="w-full max-w-2xl mx-4 my-8">
+        <CardHeader>
+          <CardTitle>Create Email Campaign</CardTitle>
+          <CardDescription>Create a new email campaign for your subscribers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Campaign Title *</label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Monthly Newsletter - January 2025"
+                required
+                data-testid="input-campaign-title"
+              />
+              <p className="text-xs text-gray-500 mt-1">Internal name for this campaign</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Email Subject *</label>
+              <Input
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                placeholder="Your Monthly Update from Our Organization"
+                required
+                data-testid="input-campaign-subject"
+              />
+              <p className="text-xs text-gray-500 mt-1">This will appear in recipients' inboxes</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Email Content *</label>
+              <textarea
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                placeholder="Write your email content here. HTML is supported."
+                required
+                rows={10}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                data-testid="input-campaign-content"
+              />
+              <p className="text-xs text-gray-500 mt-1">HTML formatting is supported</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+              <strong>Note:</strong> This campaign will be saved as a draft. To send it, you'll need to set up the Resend integration for email delivery.
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} className="flex-1" data-testid="button-submit-campaign">
+                {loading ? 'Creating...' : 'Create Draft'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

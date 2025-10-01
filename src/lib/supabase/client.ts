@@ -205,6 +205,97 @@ export type Database = {
           updated_at?: string
         }
       }
+      subscribers: {
+        Row: {
+          id: string
+          organization_id: string
+          email: string
+          first_name: string | null
+          last_name: string | null
+          status: string
+          resend_contact_id: string | null
+          subscription_source: string | null
+          subscribed_at: string
+          unsubscribed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          email: string
+          first_name?: string | null
+          last_name?: string | null
+          status?: string
+          resend_contact_id?: string | null
+          subscription_source?: string | null
+          subscribed_at?: string
+          unsubscribed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          email?: string
+          first_name?: string | null
+          last_name?: string | null
+          status?: string
+          resend_contact_id?: string | null
+          subscription_source?: string | null
+          subscribed_at?: string
+          unsubscribed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      email_campaigns: {
+        Row: {
+          id: string
+          organization_id: string
+          title: string
+          subject: string
+          content: string
+          status: string
+          resend_broadcast_id: string | null
+          scheduled_at: string | null
+          sent_at: string | null
+          recipient_count: number | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          title: string
+          subject: string
+          content: string
+          status?: string
+          resend_broadcast_id?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          recipient_count?: number | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          title?: string
+          subject?: string
+          content?: string
+          status?: string
+          resend_broadcast_id?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          recipient_count?: number | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

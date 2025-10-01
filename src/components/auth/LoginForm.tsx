@@ -1,61 +1,19 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { useTenant } from '@/hooks/useTenant'
-import { Mail, Lock, AlertCircle, Building2 } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
-
-interface Organization {
-  slug: string
-  name: string
-}
+import { Mail, Lock, AlertCircle } from 'lucide-react'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showOrgSelector, setShowOrgSelector] = useState(false)
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [selectedOrg, setSelectedOrg] = useState<string>('')
 
   const { signIn } = useAuth()
-  const { organization, subdomain, loading: tenantLoading } = useTenant()
-
-  useEffect(() => {
-    loadOrganizations()
-  }, [])
-
-  const loadOrganizations = async () => {
-    console.log('Loading organizations from Supabase...')
-    const { data, error } = await supabase
-      .from('organizations')
-      .select('slug, name')
-      .eq('is_active', true)
-      .order('name')
-
-    console.log('Organizations query result:', { data, error })
-
-    if (error) {
-      console.error('Error loading organizations:', error)
-      setError(`Failed to load organizations: ${error.message}`)
-    } else if (data) {
-      console.log('Organizations loaded:', data)
-      setOrganizations(data)
-      if (subdomain) {
-        setSelectedOrg(subdomain)
-      }
-    }
-  }
-
-  const handleOrgChange = (orgSlug: string) => {
-    // Navigate to the same page with the org parameter
-    const url = new URL(window.location.href)
-    url.searchParams.set('org', orgSlug)
-    window.location.href = url.toString()
-  }
+  const { organization, loading: tenantLoading } = useTenant()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,45 +43,35 @@ export function LoginForm() {
     )
   }
 
-  if (!organization && !showOrgSelector) {
+  if (!organization) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Select Organization</CardTitle>
-            <CardDescription>Choose your organization to sign in</CardDescription>
+            <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+            <CardTitle className="text-2xl">Organization Not Found</CardTitle>
+            <CardDescription>Please use your organization's unique login URL</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {organizations.length === 0 ? (
-                <div className="text-center py-8">
-                  <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-                  <p className="text-gray-900 font-medium mb-2">No Organizations Available</p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Unable to load organizations. This may be due to database access restrictions.
-                  </p>
-                  {error && (
-                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {error}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                organizations.map((org) => (
-                  <button
-                    key={org.slug}
-                    onClick={() => handleOrgChange(org.slug)}
-                    data-testid={`button-select-org-${org.slug}`}
-                    className="w-full p-4 text-left border rounded-lg hover:bg-blue-50 hover:border-blue-500 transition-colors flex items-center space-x-3"
-                  >
-                    <Building2 className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium" data-testid={`text-org-name-${org.slug}`}>{org.name}</div>
-                      <div className="text-sm text-gray-500" data-testid={`text-org-slug-${org.slug}`}>@{org.slug}</div>
-                    </div>
-                  </button>
-                ))
-              )}
+            <div className="space-y-4 text-sm text-gray-600">
+              <p>
+                Each organization has its own login page. Please use one of these methods:
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                <p className="font-medium text-blue-900">Option 1: Subdomain</p>
+                <code className="block bg-white p-2 rounded text-xs">
+                  https://yourorg.member.ringing.org.uk
+                </code>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                <p className="font-medium text-blue-900">Option 2: URL Parameter</p>
+                <code className="block bg-white p-2 rounded text-xs">
+                  {window.location.origin}?org=yourorg
+                </code>
+              </div>
+              <p className="text-xs text-gray-500 pt-2">
+                Contact your organization administrator if you don't have the correct URL.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -207,7 +155,7 @@ export function LoginForm() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6">
             <div className="text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
@@ -220,63 +168,9 @@ export function LoginForm() {
                 </a>
               </p>
             </div>
-
-            {organizations.length > 1 && (
-              <div className="pt-4 border-t">
-                <button
-                  onClick={() => setShowOrgSelector(true)}
-                  className="w-full text-sm text-gray-600 hover:text-gray-900 flex items-center justify-center space-x-2 py-2"
-                >
-                  <Building2 className="h-4 w-4" />
-                  <span>Switch Organization</span>
-                </button>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
-
-      {showOrgSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Switch Organization</CardTitle>
-              <CardDescription>Choose a different organization</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {organizations.map((org) => (
-                  <button
-                    key={org.slug}
-                    onClick={() => handleOrgChange(org.slug)}
-                    className={`w-full p-3 text-left border rounded-lg hover:bg-blue-50 hover:border-blue-500 transition-colors flex items-center space-x-3 ${
-                      org.slug === subdomain ? 'bg-blue-50 border-blue-500' : ''
-                    }`}
-                  >
-                    <Building2 className="h-4 w-4 text-gray-600" />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{org.name}</div>
-                      <div className="text-xs text-gray-500">@{org.slug}</div>
-                    </div>
-                    {org.slug === subdomain && (
-                      <span className="text-xs text-blue-600 font-medium">Current</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <Button
-                  onClick={() => setShowOrgSelector(false)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }
