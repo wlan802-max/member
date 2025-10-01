@@ -28,6 +28,7 @@ export function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrganizations();
@@ -35,41 +36,42 @@ export function SuperAdminDashboard() {
 
   const fetchOrganizations = async () => {
     try {
-      // For demo purposes, using mock data since Supabase isn't fully connected
-      const mockOrganizations: Organization[] = [
-        {
-          id: '1',
-          name: 'Bell Ringers Association',
-          slug: 'bellringers',
-          domain: 'bellringers.member.ringing.org.uk',
-          logo_url: null,
-          primary_color: '#3B82F6',
-          secondary_color: '#1E40AF',
-          contact_email: 'admin@bellringers.org',
-          contact_phone: '+44 123 456 7890',
-          is_active: true,
-          created_at: '2024-01-15T10:00:00Z',
-          member_count: 150
-        },
-        {
-          id: '2',
-          name: 'Tower Bells Society',
-          slug: 'towerbells',
-          domain: 'towerbells.member.ringing.org.uk',
-          logo_url: null,
-          primary_color: '#059669',
-          secondary_color: '#047857',
-          contact_email: 'contact@towerbells.org',
-          contact_phone: '+44 987 654 3210',
-          is_active: true,
-          created_at: '2024-02-20T14:30:00Z',
-          member_count: 89
-        }
-      ];
+      setError(null);
+      console.log('Fetching organizations from database...');
 
-      setOrganizations(mockOrganizations);
+      const { data, error: dbError } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (dbError) {
+        console.error('Database error fetching organizations:', dbError);
+        setError(`Database error: ${dbError.message}. Please ensure RLS policies are set up correctly.`);
+        return;
+      }
+
+      console.log('Fetched organizations:', data);
+
+      const orgsWithCounts = await Promise.all(
+        (data || []).map(async (org) => {
+          const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', org.id)
+            .eq('is_active', true);
+
+          return {
+            ...org,
+            member_count: count || 0
+          };
+        })
+      );
+
+      setOrganizations(orgsWithCounts);
+      console.log('Organizations loaded successfully:', orgsWithCounts.length);
     } catch (error) {
       console.error('Failed to fetch organizations:', error);
+      setError(`Failed to load organizations: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -111,6 +113,31 @@ export function SuperAdminDashboard() {
           Create Organization
         </Button>
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-red-800">Error Loading Organizations</h3>
+              <div className="mt-2 text-sm text-red-700">{error}</div>
+              <div className="mt-3">
+                <Button
+                  onClick={() => fetchOrganizations()}
+                  variant="outline"
+                  className="text-sm"
+                >
+                  Retry
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -281,21 +308,40 @@ function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizationModal
     secondary_color: '#1E40AF'
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
-      // Here you would call the API to create the organization
       console.log('Creating organization:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
+      const { data, error: dbError } = await supabase
+        .from('organizations')
+        .insert({
+          name: formData.name,
+          slug: formData.slug,
+          domain: `${formData.slug}.member.ringing.org.uk`,
+          contact_email: formData.contact_email,
+          contact_phone: formData.contact_phone || null,
+          primary_color: formData.primary_color,
+          secondary_color: formData.secondary_color,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        throw new Error(dbError.message);
+      }
+
+      console.log('Organization created successfully:', data);
       onSuccess();
     } catch (error) {
       console.error('Failed to create organization:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create organization');
     } finally {
       setLoading(false);
     }
@@ -373,9 +419,15 @@ function CreateOrganizationModal({ onClose, onSuccess }: CreateOrganizationModal
                 />
               </div>
             </div>
-            
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                <strong>Error:</strong> {error}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>

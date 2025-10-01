@@ -67,9 +67,20 @@ function App() {
     return <LoginForm />
   }
 
-  // If authenticated but no organization, show error
+  // If authenticated but no organization, show org selector or error based on context
   if (!organization) {
     console.log('Authenticated user but no organization found')
+
+    // If in development mode without org param, show the login form which includes org selector
+    const hostname = window.location.hostname
+    const isDevMode = hostname === 'localhost' || hostname === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
+    const hasOrgParam = new URLSearchParams(window.location.search).get('org')
+
+    if (isDevMode && !hasOrgParam) {
+      return <LoginForm />
+    }
+
+    // Otherwise show error for invalid subdomain/org
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
