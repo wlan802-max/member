@@ -321,18 +321,18 @@ EOF
     
     # Install dependencies
     log "Installing dependencies..."
-    cd $APP_DIR && sudo -u $APP_USER npm ci
+    sudo -u $APP_USER bash -c "cd $APP_DIR && npm ci"
     
     # Install production server dependencies
-    cd $APP_DIR && sudo -u $APP_USER npm install express --save
+    sudo -u $APP_USER bash -c "cd $APP_DIR && npm install express --save"
     
     # Build application
     log "Building application..."
-    cd $APP_DIR && sudo -u $APP_USER npm run build
+    sudo -u $APP_USER bash -c "cd $APP_DIR && npm run build"
     
     # Clean up dev dependencies after build
     log "Cleaning up dev dependencies..."
-    cd $APP_DIR && sudo -u $APP_USER npm prune --omit=dev
+    sudo -u $APP_USER bash -c "cd $APP_DIR && npm prune --omit=dev"
 }
 
 # Setup PM2 configuration
@@ -389,8 +389,8 @@ EOF
     
     # Start application with PM2
     log "Starting application with PM2..."
-    cd $APP_DIR && sudo -u $APP_USER pm2 start ecosystem.config.cjs
-    cd $APP_DIR && sudo -u $APP_USER pm2 save
+    sudo -u $APP_USER bash -c "cd $APP_DIR && pm2 start ecosystem.config.cjs"
+    sudo -u $APP_USER bash -c "cd $APP_DIR && pm2 save"
     
     # Setup PM2 startup script
     sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $APP_USER --hp $APP_DIR
