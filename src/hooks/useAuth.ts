@@ -6,14 +6,22 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('useAuth: Starting auth check')
     // Get initial user
-    auth.getCurrentUser().then((user) => {
-      setUser(user)
-      setLoading(false)
-    })
+    auth.getCurrentUser()
+      .then((user) => {
+        console.log('useAuth: getCurrentUser resolved with user:', user?.email || 'null')
+        setUser(user)
+        setLoading(false)
+      })
+      .catch((error) => {
+        console.error('useAuth: getCurrentUser failed:', error)
+        setLoading(false)
+      })
 
     // Listen for auth changes
     const { data: { subscription } } = auth.onAuthStateChange((user) => {
+      console.log('useAuth: Auth state changed, user:', user?.email || 'null')
       setUser(user)
       setLoading(false)
     })
