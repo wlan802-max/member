@@ -54,7 +54,7 @@ export const auth = {
 
     console.log('Getting profile for user:', user.id)
 
-    // Get user profile with organization
+    // Get user profile with organization (use left join for super admins who have no org)
     const { data: profile, error } = await supabase
       .from('profiles')
       .select(`
@@ -62,7 +62,8 @@ export const auth = {
         first_name,
         last_name,
         role,
-        organizations!inner(
+        organization_id,
+        organizations(
           id,
           name,
           slug,
@@ -80,7 +81,7 @@ export const auth = {
     if (!profile) {
       console.warn('No profile found for user:', user.id)
     } else {
-      console.log('Profile loaded:', { role: profile.role, org: profile.organizations?.slug })
+      console.log('Profile loaded:', { role: profile.role, org: profile.organizations?.slug, has_org: !!profile.organization_id })
     }
 
     return {
@@ -91,7 +92,7 @@ export const auth = {
         first_name: profile.first_name,
         last_name: profile.last_name,
         role: profile.role,
-        organization: profile.organizations
+        organization: profile.organizations || undefined
       } : undefined
     }
   },
