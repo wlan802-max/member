@@ -5,11 +5,9 @@ This guide covers the complete deployment process for the multi-tenant membershi
 ## Prerequisites
 
 - Ubuntu 20.04+ or Debian 11+ server
-- Domain name configured (member.ringing.org.uk)
-- Supabase project set up
-- Resend API account
-- Google Wallet API credentials
-- Apple Developer account (for Wallet integration)
+- Domain name configured (e.g., member.ringing.org.uk)
+- Supabase project set up and configured
+- SSH access to server
 
 ## Server Setup
 
@@ -20,16 +18,12 @@ This guide covers the complete deployment process for the multi-tenant membershi
 sudo apt update && sudo apt upgrade -y
 
 # Install essential packages
-sudo apt install -y curl wget git unzip software-properties-common
+sudo apt install -y curl wget git unzip
 
 # Configure firewall
 sudo ufw allow OpenSSH
 sudo ufw allow 'Nginx Full'
 sudo ufw enable
-
-# Create application user
-sudo adduser --system --group --home /var/www membership
-sudo usermod -aG sudo membership
 ```
 
 ### 2. Install Node.js
@@ -43,7 +37,7 @@ sudo apt-get install -y nodejs
 node --version
 npm --version
 
-# Install global packages
+# Install PM2 globally
 sudo npm install -g pm2@latest
 ```
 
@@ -57,7 +51,7 @@ sudo apt install nginx -y
 sudo systemctl start nginx
 sudo systemctl enable nginx
 
-# Test Nginx installation
+# Test Nginx
 sudo nginx -t
 ```
 
@@ -73,59 +67,29 @@ sudo apt install certbot python3-certbot-nginx -y
 ### 1. Clone and Setup Application
 
 ```bash
-# Switch to application user
-sudo su - membership
+# Create directory
+sudo mkdir -p /var/www
+cd /var/www
 
 # Clone repository
-cd /var/www
-git clone <your-repository-url> membership-system
+sudo git clone <your-repository-url> membership-system
 cd membership-system
 
 # Install dependencies
-npm ci --production
+npm install
 
 # Create environment file
-cp .env.example .env.local
+cp .env.example .env
 ```
 
 ### 2. Environment Configuration
 
-Edit `/var/www/membership-system/.env.local`:
+Edit `/var/www/membership-system/.env`:
 
 ```env
-# Application
-NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://member.ringing.org.uk
-NEXT_PUBLIC_DOMAIN=member.ringing.org.uk
-PORT=3000
-
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Resend
-RESEND_API_KEY=your_resend_api_key
-
-# Google Wallet
-GOOGLE_WALLET_ISSUER_ID=your_issuer_id
-GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL=your_service_account_email
-GOOGLE_WALLET_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-
-# Apple Wallet
-APPLE_WALLET_TEAM_ID=your_team_id
-APPLE_WALLET_PASS_TYPE_ID=your_pass_type_id
-APPLE_WALLET_PRIVATE_KEY_PATH=/var/www/membership-system/certs/apple-wallet-private.key
-
-# Security
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=https://member.ringing.org.uk
-
-# Email
-SMTP_HOST=smtp.resend.com
-SMTP_PORT=587
-SMTP_USER=resend
-SMTP_PASS=your_resend_api_key
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
 ### 3. Build Application
@@ -134,51 +98,34 @@ SMTP_PASS=your_resend_api_key
 # Build the application
 npm run build
 
-# Test the build
-npm start &
-curl http://localhost:3000
-kill %1
+# Verify build output
+ls -la dist/
 ```
 
 ### 4. PM2 Configuration
 
-Create `/var/www/membership-system/ecosystem.config.js`:
+The project includes `ecosystem.config.cjs` for PM2. Review and adjust if needed:
 
 ```javascript
 module.exports = {
   apps: [{
     name: 'membership-system',
-    script: 'npm',
-    args: 'start',
-    cwd: '/var/www/membership-system',
-    instances: 'max',
+    script: './server.js',
+    instances: 1,
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
       PORT: 3000
-    },
-    error_file: '/var/log/membership-system/err.log',
-    out_file: '/var/log/membership-system/out.log',
-    log_file: '/var/log/membership-system/combined.log',
-    time: true,
-    max_memory_restart: '1G',
-    node_args: '--max-old-space-size=1024'
+    }
   }]
 };
-```
-
-Create log directory:
-
-```bash
-sudo mkdir -p /var/log/membership-system
-sudo chown membership:membership /var/log/membership-system
 ```
 
 ### 5. Start Application with PM2
 
 ```bash
 # Start application
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 
 # Save PM2 configuration
 pm2 save
@@ -199,118 +146,42 @@ pm2 logs membership-system
 Create `/etc/nginx/sites-available/membership-system`:
 
 ```nginx
-# Rate limiting
-limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
-limit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;
-
-# Upstream configuration
-upstream membership_backend {
-    least_conn;
-    server 127.0.0.1:3000 max_fails=3 fail_timeout=30s;
-    keepalive 32;
-}
-
-# Main server block
 server {
     listen 80;
     server_name member.ringing.org.uk *.member.ringing.org.uk;
-    
+
+    root /var/www/membership-system/dist;
+    index index.html;
+
     # Security headers
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.resend.com;" always;
-    
+
     # Gzip compression
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate auth;
-    gzip_types
-        text/plain
-        text/css
-        text/xml
-        text/javascript
-        application/javascript
-        application/xml+rss
-        application/json;
-    
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+
+    # Main location
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
     # Static file caching
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
-        try_files $uri @proxy;
     }
-    
-    # API rate limiting
-    location /api/ {
-        limit_req zone=api burst=20 nodelay;
-        limit_req_status 429;
-        try_files $uri @proxy;
-    }
-    
-    # Auth endpoints rate limiting
-    location ~* /api/auth/(signin|signup|callback) {
-        limit_req zone=login burst=5 nodelay;
-        limit_req_status 429;
-        try_files $uri @proxy;
-    }
-    
-    # Health check endpoint
-    location /health {
-        access_log off;
-        try_files $uri @proxy;
-    }
-    
-    # Main proxy configuration
-    location / {
-        try_files $uri @proxy;
-    }
-    
-    location @proxy {
-        proxy_pass http://membership_backend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-        
-        # Timeouts
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-        
-        # Buffer settings
-        proxy_buffering on;
-        proxy_buffer_size 128k;
-        proxy_buffers 4 256k;
-        proxy_busy_buffers_size 256k;
-    }
-    
-    # Security
+
+    # Security - deny access to hidden files
     location ~ /\. {
         deny all;
         access_log off;
         log_not_found off;
     }
-    
-    # Block access to sensitive files
-    location ~* \.(env|log|sql)$ {
-        deny all;
-        access_log off;
-        log_not_found off;
-    }
-}
-
-# Redirect www to non-www
-server {
-    listen 80;
-    server_name www.member.ringing.org.uk;
-    return 301 https://member.ringing.org.uk$request_uri;
 }
 ```
 
@@ -335,10 +206,11 @@ sudo systemctl reload nginx
 ### 1. Obtain SSL Certificates
 
 ```bash
-# Get certificates for main domain and wildcard subdomain
+# Get certificate for main domain and wildcard subdomain
 sudo certbot --nginx -d member.ringing.org.uk -d *.member.ringing.org.uk
 
-# Follow the prompts to configure automatic renewal
+# Follow the prompts
+# Choose option 2: Redirect HTTP to HTTPS
 ```
 
 ### 2. Configure Auto-renewal
@@ -370,310 +242,236 @@ member.ringing.org.uk.     CAA   0 issue "letsencrypt.org"
 
 ## Monitoring and Logging
 
-### 1. Setup Log Rotation
-
-Create `/etc/logrotate.d/membership-system`:
-
-```
-/var/log/membership-system/*.log {
-    daily
-    missingok
-    rotate 52
-    compress
-    delaycompress
-    notifempty
-    create 644 membership membership
-    postrotate
-        pm2 reloadLogs
-    endscript
-}
-```
-
-### 2. System Monitoring
-
-Create `/var/www/membership-system/scripts/health-check.sh`:
+### 1. PM2 Monitoring
 
 ```bash
-#!/bin/bash
+# View logs
+pm2 logs membership-system
 
-# Health check script
-HEALTH_URL="http://localhost:3000/health"
-LOG_FILE="/var/log/membership-system/health-check.log"
+# Monitor resources
+pm2 monit
 
-# Check application health
-response=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
+# View application info
+pm2 info membership-system
 
-if [ $response -eq 200 ]; then
-    echo "$(date): Health check passed" >> $LOG_FILE
-else
-    echo "$(date): Health check failed with status $response" >> $LOG_FILE
-    # Restart application if health check fails
-    pm2 restart membership-system
-    echo "$(date): Application restarted" >> $LOG_FILE
-fi
+# View all processes
+pm2 list
 ```
 
-Make it executable and add to crontab:
+### 2. Nginx Logs
 
 ```bash
-chmod +x /var/www/membership-system/scripts/health-check.sh
+# View access logs
+sudo tail -f /var/log/nginx/access.log
 
-# Add to crontab (run every 5 minutes)
-crontab -e
-# Add: */5 * * * * /var/www/membership-system/scripts/health-check.sh
+# View error logs
+sudo tail -f /var/log/nginx/error.log
 ```
 
-### 3. Performance Monitoring
-
-Install and configure monitoring tools:
+### 3. System Monitoring
 
 ```bash
-# Install htop for system monitoring
+# Install htop
 sudo apt install htop -y
 
-# Install iotop for disk I/O monitoring
-sudo apt install iotop -y
+# Monitor system resources
+htop
 
-# Setup PM2 monitoring
-pm2 install pm2-server-monit
+# Check disk space
+df -h
+
+# Check memory usage
+free -h
+```
+
+## Updates and Maintenance
+
+### Updating Application
+
+```bash
+# Navigate to app directory
+cd /var/www/membership-system
+
+# Pull latest changes
+git pull origin main
+
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Restart PM2
+pm2 restart membership-system
+
+# Check status
+pm2 logs membership-system
+```
+
+### Database Migrations
+
+```bash
+# Run new migrations in Supabase SQL Editor
+# Migrations are in: supabase/migrations/
 ```
 
 ## Backup Strategy
 
-### 1. Database Backup Script
-
-Create `/var/www/membership-system/scripts/backup-db.sh`:
+### 1. Application Backup
 
 ```bash
-#!/bin/bash
-
-BACKUP_DIR="/var/backups/membership-system"
-DATE=$(date +%Y%m%d_%H%M%S)
-SUPABASE_URL="your_supabase_url"
-SUPABASE_KEY="your_service_role_key"
-
 # Create backup directory
-mkdir -p $BACKUP_DIR
+sudo mkdir -p /var/backups/membership-system
 
-# Backup database (using Supabase CLI or pg_dump if direct access)
-# This is a placeholder - adjust based on your Supabase setup
-echo "Database backup would be performed here"
-echo "Backup completed at $(date)" > $BACKUP_DIR/db_backup_$DATE.log
-
-# Keep only last 30 days of backups
-find $BACKUP_DIR -name "*.log" -mtime +30 -delete
-```
-
-### 2. Application Backup Script
-
-Create `/var/www/membership-system/scripts/backup-app.sh`:
-
-```bash
-#!/bin/bash
-
-BACKUP_DIR="/var/backups/membership-system"
-DATE=$(date +%Y%m%d_%H%M%S)
-APP_DIR="/var/www/membership-system"
-
-# Create backup directory
-mkdir -p $BACKUP_DIR
-
-# Backup application files (excluding node_modules and .next)
-tar -czf $BACKUP_DIR/app_backup_$DATE.tar.gz \
+# Backup application files
+sudo tar -czf /var/backups/membership-system/app_$(date +%Y%m%d).tar.gz \
+    -C /var/www membership-system \
     --exclude=node_modules \
-    --exclude=.next \
-    --exclude=.git \
-    -C /var/www membership-system
+    --exclude=dist \
+    --exclude=.git
 
-# Keep only last 7 days of app backups
-find $BACKUP_DIR -name "app_backup_*.tar.gz" -mtime +7 -delete
+# Keep only last 7 days
+find /var/backups/membership-system -name "app_*.tar.gz" -mtime +7 -delete
 ```
 
-### 3. Setup Automated Backups
+### 2. Database Backup
 
-```bash
-# Make scripts executable
-chmod +x /var/www/membership-system/scripts/backup-*.sh
-
-# Add to crontab
-crontab -e
-# Add:
-# 0 2 * * * /var/www/membership-system/scripts/backup-db.sh
-# 0 3 * * * /var/www/membership-system/scripts/backup-app.sh
-```
+Supabase handles automatic backups. You can also:
+- Download manual backups from Supabase dashboard
+- Use Supabase CLI for programmatic backups
 
 ## Security Hardening
 
-### 1. Firewall Configuration
+### 1. Firewall
 
 ```bash
-# Configure UFW
+# Check UFW status
+sudo ufw status verbose
+
+# Allow only necessary ports
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow ssh
 sudo ufw allow 'Nginx Full'
-sudo ufw enable
-
-# Check status
-sudo ufw status verbose
 ```
 
-### 2. Fail2Ban Setup
+### 2. Fail2Ban (Optional)
 
 ```bash
 # Install Fail2Ban
 sudo apt install fail2ban -y
 
-# Create custom configuration
+# Configure
 sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
 
-# Configure Nginx protection
-sudo tee /etc/fail2ban/jail.d/nginx.conf << EOF
-[nginx-http-auth]
-enabled = true
-filter = nginx-http-auth
-logpath = /var/log/nginx/error.log
-maxretry = 3
-bantime = 3600
-
-[nginx-limit-req]
-enabled = true
-filter = nginx-limit-req
-logpath = /var/log/nginx/error.log
-maxretry = 10
-bantime = 600
-EOF
-
-# Restart Fail2Ban
-sudo systemctl restart fail2ban
+# Start service
+sudo systemctl start fail2ban
+sudo systemctl enable fail2ban
 ```
 
-### 3. System Updates
+### 3. Automatic Updates
 
 ```bash
-# Enable automatic security updates
+# Enable unattended upgrades
 sudo apt install unattended-upgrades -y
 sudo dpkg-reconfigure -plow unattended-upgrades
 ```
 
-## Deployment Automation
-
-### 1. Deployment Script
-
-Create `/var/www/membership-system/scripts/deploy.sh`:
-
-```bash
-#!/bin/bash
-
-set -e
-
-APP_DIR="/var/www/membership-system"
-BACKUP_DIR="/var/backups/membership-system"
-DATE=$(date +%Y%m%d_%H%M%S)
-
-echo "Starting deployment at $(date)"
-
-# Create backup before deployment
-echo "Creating backup..."
-tar -czf $BACKUP_DIR/pre_deploy_$DATE.tar.gz -C /var/www membership-system
-
-# Pull latest changes
-echo "Pulling latest changes..."
-cd $APP_DIR
-git pull origin main
-
-# Install dependencies
-echo "Installing dependencies..."
-npm ci --production
-
-# Build application
-echo "Building application..."
-npm run build
-
-# Restart application
-echo "Restarting application..."
-pm2 restart membership-system
-
-# Wait for application to start
-sleep 10
-
-# Health check
-echo "Performing health check..."
-if curl -f http://localhost:3000/health; then
-    echo "Deployment successful!"
-else
-    echo "Health check failed, rolling back..."
-    # Rollback logic here
-    exit 1
-fi
-
-echo "Deployment completed at $(date)"
-```
-
-### 2. Zero-Downtime Deployment
-
-For zero-downtime deployments, modify the PM2 configuration:
-
-```javascript
-// ecosystem.config.js
-module.exports = {
-  apps: [{
-    name: 'membership-system',
-    script: 'npm',
-    args: 'start',
-    instances: 'max',
-    exec_mode: 'cluster',
-    wait_ready: true,
-    listen_timeout: 10000,
-    kill_timeout: 5000,
-    // ... other configuration
-  }]
-};
-```
-
 ## Troubleshooting
 
-### Common Issues
+### Application Not Starting
 
-1. **Application won't start**
-   ```bash
-   # Check PM2 logs
-   pm2 logs membership-system
-   
-   # Check system resources
-   htop
-   df -h
-   ```
+```bash
+# Check PM2 logs
+pm2 logs membership-system --lines 100
 
-2. **SSL certificate issues**
-   ```bash
-   # Check certificate status
-   sudo certbot certificates
-   
-   # Renew certificates
-   sudo certbot renew --force-renewal
-   ```
+# Check Node.js version
+node --version
 
-3. **Database connection issues**
-   ```bash
-   # Test Supabase connection
-   curl -H "apikey: YOUR_ANON_KEY" "YOUR_SUPABASE_URL/rest/v1/"
-   ```
+# Verify environment variables
+cat .env
 
-4. **High memory usage**
-   ```bash
-   # Restart application
-   pm2 restart membership-system
-   
-   # Check for memory leaks
-   pm2 monit
-   ```
+# Check build output
+ls -la dist/
+```
 
-### Log Locations
+### Nginx Issues
 
-- Application logs: `/var/log/membership-system/`
-- Nginx logs: `/var/log/nginx/`
-- System logs: `/var/log/syslog`
-- PM2 logs: `~/.pm2/logs/`
+```bash
+# Test configuration
+sudo nginx -t
 
-This completes the deployment guide. The system should now be running securely and efficiently on your Ubuntu/Debian server with proper monitoring, backups, and security measures in place.
+# Check error logs
+sudo tail -f /var/log/nginx/error.log
+
+# Restart Nginx
+sudo systemctl restart nginx
+```
+
+### SSL Certificate Problems
+
+```bash
+# Check certificates
+sudo certbot certificates
+
+# Renew manually
+sudo certbot renew --force-renewal
+
+# Check Nginx config for SSL
+sudo nginx -t
+```
+
+### Cannot Access Application
+
+1. Check DNS records are correct
+2. Verify firewall allows ports 80/443
+3. Check Nginx is running: `sudo systemctl status nginx`
+4. Check PM2 app status: `pm2 status`
+5. Review Nginx error logs
+6. Verify SSL certificates are valid
+
+## Performance Optimization
+
+### 1. Enable Nginx Caching (Optional)
+
+```nginx
+# Add to nginx config
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=static_cache:10m max_size=1g inactive=60m use_temp_path=off;
+```
+
+### 2. PM2 Cluster Mode
+
+Already configured in `ecosystem.config.cjs` for optimal performance.
+
+### 3. Database Connection Pooling
+
+Handled automatically by Supabase client.
+
+## Health Checks
+
+Create a simple health check endpoint:
+
+```bash
+# Test application
+curl http://localhost:3000
+
+# Test through Nginx
+curl https://member.ringing.org.uk
+```
+
+## Support and Resources
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [PM2 Documentation](https://pm2.keymetrics.io/docs)
+- [Nginx Documentation](https://nginx.org/en/docs)
+- Project README: `/var/www/membership-system/README.md`
+
+## Next Steps
+
+After deployment:
+1. Test authentication flow
+2. Create test organizations
+3. Verify RLS policies
+4. Set up monitoring alerts
+5. Document custom configurations
+6. Create backup schedule

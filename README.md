@@ -1,34 +1,29 @@
 # Multi-Tenant Membership Management System
 
-A comprehensive membership management system supporting multiple organizations with subdomain-based routing, digital membership cards, and email campaign management.
+A comprehensive membership management system supporting multiple organizations with flexible URL-based routing, Supabase backend, and modern React frontend.
 
 ## 🚀 Features
 
 - **Multi-Tenant Architecture**: Complete data isolation per organization
-- **Organization Selector**: Easy switching between organizations and super admin portal
-- **Subdomain Routing**: org.member.ringing.org.uk
-- **Digital Membership Cards**: Google Wallet & Apple Wallet integration (optional)
-- **Email Campaigns**: Resend API integration with campaign management (optional)
-- **Automated Renewals**: Configurable renewal workflows
+- **Organization Selector**: Easy switching between organizations via URL parameter (?org=)
+- **URL Parameter Routing**: Works with subdomains (org.member.ringing.org.uk) or URL parameters (?org=orgslug)
+- **Flexible Development**: Supports localhost, IP addresses, and production domains
+- **Super Admin Portal**: System administration via ?org=admin
 - **Role-Based Access**: Members, Admins, Super-Admin roles
 - **Responsive Design**: Mobile-first approach with Tailwind CSS
+- **Supabase Integration**: PostgreSQL with Row Level Security (RLS)
 
 ## 🛠 Technology Stack
 
 - **Frontend**: Vite, React, Tailwind CSS, TypeScript
 - **Backend**: Supabase (PostgreSQL, Auth, Storage)
-- **Email**: Resend API (optional)
-- **Digital Wallets**: Google Wallet API, Apple PassKit (optional)
-- **Deployment**: Ubuntu/Debian, Nginx, PM2
+- **Deployment**: Node.js, PM2, Nginx
 
 ## 📋 Prerequisites
 
 - Node.js 18+
 - Supabase account and project
-- Resend API account
-- Google Wallet API credentials
-- Apple Developer account (for Wallet integration)
-- Ubuntu/Debian server for deployment
+- Ubuntu/Debian server for deployment (optional)
 
 ## 🚀 Quick Start
 
@@ -60,9 +55,9 @@ Get credentials from: https://app.supabase.com/project/_/settings/api
 ### 3. Database Setup
 
 In Supabase Dashboard → SQL Editor, run migrations in order:
-1. `supabase/migrations/20250929231345_bitter_cake.sql`
-2. `supabase/migrations/20250930111734_violet_valley.sql`
-3. `supabase/migrations/20250930115029_restless_fog.sql`
+1. `supabase/migrations/20251001063749_20250929231345_bitter_cake.sql`
+2. `supabase/migrations/20251001063812_20250930111734_violet_valley.sql`
+3. `supabase/migrations/20251001063830_20250930115029_restless_fog.sql`
 
 Then create organizations:
 ```bash
@@ -75,45 +70,50 @@ Then create organizations:
 npm run dev
 ```
 
-Visit `http://localhost:5173`
+Visit one of the following:
+- `http://localhost:5173` - Shows organization selector
+- `http://localhost:5173?org=orgslug` - Load specific organization
+- `http://localhost:5173?org=admin` - Access super admin portal
 
-**✨ Organization Selector:** You'll see a list of organizations - click **"System Administration"** to access the super admin portal!
+**✨ Organization Selector:** Without an org parameter, you'll see a list of all organizations to choose from.
 
 ## 📁 Project Structure
 
 ```
 ├── src/
-│   ├── app/                 # Next.js App Router
-│   │   ├── (admin)/        # Admin dashboard routes
-│   │   ├── (auth)/         # Authentication routes
-│   │   ├── (member)/       # Member portal routes
-│   │   └── api/            # API routes
-│   ├── components/         # Reusable components
-│   │   ├── ui/            # Base UI components
-│   │   ├── forms/         # Form components
-│   │   └── layout/        # Layout components
-│   ├── lib/               # Utilities and configurations
-│   │   ├── supabase/      # Supabase client and types
-│   │   ├── email/         # Email service
-│   │   ├── wallet/        # Digital wallet services
-│   │   └── utils/         # Helper functions
+│   ├── components/         # React components
+│   │   ├── admin/         # Admin dashboard components
+│   │   ├── auth/          # Authentication components
+│   │   ├── dashboard/     # Member dashboard
+│   │   ├── layout/        # Layout components
+│   │   └── ui/            # Base UI components
 │   ├── hooks/             # Custom React hooks
-│   ├── types/             # TypeScript type definitions
-│   └── middleware.ts      # Next.js middleware
+│   │   ├── useAuth.ts     # Authentication hook
+│   │   └── useTenant.ts   # Multi-tenant hook
+│   ├── lib/               # Utilities and configurations
+│   │   ├── supabase/      # Supabase client
+│   │   ├── api/           # API utilities
+│   │   ├── auth.ts        # Auth utilities
+│   │   ├── tenant.ts      # Tenant utilities
+│   │   └── utils.ts       # Helper functions
+│   ├── App.tsx            # Main app component
+│   └── main.tsx           # App entry point
 ├── supabase/
-│   ├── migrations/        # Database migrations
-│   └── functions/         # Edge functions
+│   └── migrations/        # Database migrations
 ├── docs/                  # Documentation
-└── deployment/           # Deployment configurations
+├── server.js              # Production server
+└── ecosystem.config.cjs   # PM2 configuration
 ```
 
 ## 🏗 Architecture Overview
 
 ### Multi-Tenancy
-The system uses subdomain-based multi-tenancy with complete data isolation:
-- `org1.member.ringing.org.uk` - Organization 1
-- `org2.member.ringing.org.uk` - Organization 2
-- `admin.member.ringing.org.uk` - Super Admin
+The system uses flexible URL parameter-based multi-tenancy with complete data isolation:
+- `example.com?org=org1` - Organization 1
+- `org1.member.ringing.org.uk` - Organization 1 (subdomain)
+- `87.106.199.5?org=org1` - Organization 1 (IP address)
+- `localhost:5173?org=admin` - Super Admin (development)
+- `admin.member.ringing.org.uk` - Super Admin (production)
 
 ### Data Isolation
 - Row Level Security (RLS) policies ensure complete data separation
@@ -121,36 +121,15 @@ The system uses subdomain-based multi-tenancy with complete data isolation:
 - Shared infrastructure with isolated data access
 
 ### Authentication Flow
-1. User visits organization subdomain
-2. Middleware detects tenant from subdomain
+1. User visits site with ?org= parameter or organization subdomain
+2. System detects tenant from URL parameter or subdomain
 3. Authentication scoped to organization
 4. RLS policies enforce data access
 
-## 🔧 Configuration
-
-### Organization Setup
-1. Super admin creates new organization
-2. System generates subdomain
-3. Organization admin configures branding
-4. Members can register and access services
-
-### Email Configuration
-- Configure Resend API credentials
-- Set up organization-specific email templates
-- Configure SMTP settings for transactional emails
-
-### Digital Wallet Setup
-- Configure Google Wallet API credentials
-- Set up Apple Wallet certificates
-- Customize pass templates per organization
-
 ## 📚 Documentation
 
-- [Database Setup](./docs/database-setup.md)
-- [Deployment Guide](./docs/deployment.md)
-- [API Documentation](./docs/api.md)
-- [Digital Wallet Integration](./docs/wallet-integration.md)
-- [Email System](./docs/email-system.md)
+- [Database Setup](./docs/database-setup.md) - Supabase schema and migrations
+- [Deployment Guide](./docs/deployment.md) - Production deployment instructions
 
 ## 🚀 Deployment
 
@@ -179,13 +158,13 @@ git clone <repository-url> /var/www/membership-system
 cd /var/www/membership-system
 
 # Install dependencies
-npm ci --production
+npm install
 
 # Build application
 npm run build
 
 # Start with PM2
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup
 ```
@@ -195,17 +174,17 @@ pm2 startup
 server {
     listen 80;
     server_name *.member.ringing.org.uk member.ringing.org.uk;
-    
+
+    root /var/www/membership-system/dist;
+    index index.html;
+
     location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
     }
 }
 ```
@@ -225,32 +204,21 @@ sudo certbot --nginx -d member.ringing.org.uk -d *.member.ringing.org.uk
 # Run all tests
 npm test
 
-# Run specific test suites
-npm run test:unit
-npm run test:integration
-npm run test:e2e
-
 # Run with coverage
 npm run test:coverage
+
+# Type check
+npm run typecheck
 ```
 
 ## 🔒 Security
 
 - Row Level Security (RLS) for data isolation
-- JWT-based authentication
+- JWT-based authentication via Supabase
 - HTTPS enforcement
 - Input validation and sanitization
-- Rate limiting on API endpoints
-- CORS configuration
 - Security headers
-
-## 📊 Monitoring
-
-- Application performance monitoring
-- Database performance tracking
-- Email delivery monitoring
-- Error tracking and alerting
-- Uptime monitoring
+- CORS configuration
 
 ## 🤝 Contributing
 
@@ -273,10 +241,11 @@ For support and questions:
 
 ## 🗺 Roadmap
 
-- [ ] Mobile app development
+- [ ] Email campaign management
+- [ ] Digital wallet integration (Google/Apple Wallet)
+- [ ] Payment processor integration
 - [ ] Advanced analytics dashboard
-- [ ] Integration with payment processors
+- [ ] Mobile app development
 - [ ] Multi-language support
-- [ ] Advanced email automation
-- [ ] API rate limiting improvements
+- [ ] API rate limiting
 - [ ] Enhanced security features
