@@ -56,7 +56,26 @@ The project is configured for Replit deployment:
 5. **HTML sanitization** added using DOMPurify for email campaign content (XSS prevention)
 6. **Alert() calls removed** - All 7 alert() popups replaced with disabled states and inline feedback
 
-### Recent Implementation (October 2025)
+### Recent Changes (October 2025)
+
+**Organization Selector Removed:**
+- Removed organization selector UI - each organization now requires its own login URL
+- Users must access via subdomain (`org.member.ringing.org.uk`) or URL parameter (`?org=orgslug`)
+- Improved security by preventing cross-organization browsing
+
+**Mailing List Management (Resend Integration):**
+- ✅ **Subscribers Management** - Full CRUD for mailing list subscribers in admin panel
+- ✅ **Email Campaigns** - Create, manage, and track email campaigns
+- ✅ **Public Subscription Form** - Standalone component for website integration (`src/components/subscription/SubscriptionForm.tsx`)
+- ✅ **Unsubscribe Page** - GDPR-compliant unsubscribe flow (`src/components/subscription/UnsubscribePage.tsx`)
+- ✅ **Resend Integration** - Professional transactional and marketing email delivery
+- ✅ **Database Schema** - `subscribers` and `email_campaigns` tables with proper RLS
+
+**Deployment Updates:**
+- Updated deployment script (`deploy.sh`) for Ubuntu production with Node.js 20, PM2, Nginx
+- Added wildcard subdomain support in Nginx configuration
+- SSL/TLS setup with Let's Encrypt (Certbot)
+- Production-ready with health checks, log rotation, and monitoring
 
 **Super Admin Dashboard (src/components/admin/SuperAdminDashboard.tsx):**
 - ✅ Full CRUD operations for organizations (Create, Edit, View Details, Delete/Deactivate)
@@ -65,9 +84,11 @@ The project is configured for Replit deployment:
 - ✅ Uses real Supabase queries with proper RLS enforcement
 
 **Organization Admin Panel (Embedded in src/components/dashboard/MemberDashboard.tsx):**
-- ✅ Members management tabs for organization admins (MembersAdminView)
-- ✅ View, add, edit, activate/deactivate members with real Supabase queries
-- ✅ Organization Settings tab (SettingsAdminView) to update branding and contact info
+- ✅ **Members Tab** - View, add, edit, activate/deactivate members with real Supabase queries
+- ✅ **Organization Settings Tab** - Update branding and contact info
+- ✅ **Mailing List Tab** - Manage subscribers and email campaigns
+  - **Subscribers Sub-tab** - Add/remove/unsubscribe mailing list subscribers
+  - **Email Campaigns Sub-tab** - Create and manage email campaigns (draft/sent status)
 - ✅ Security scoped to organization_id for data isolation
 - Note: Embedded as tabs within MemberDashboard, not as separate file
 
@@ -86,10 +107,20 @@ All critical limitations have been addressed (October 2025):
 4. ✅ **Events functionality** - Added events table type definition and implemented EventsView with real Supabase queries to fetch/display upcoming published events
 5. ✅ **Add member functionality** - Updated to work securely with existing Supabase Auth users (admin provides user_id from Supabase Auth dashboard)
 
-**Remaining Considerations:**
-- Events table must exist in Supabase database (schema provided in Database type)
-- Add member requires user to sign up with Supabase Auth first (secure approach - no service role key exposure)
-- RLS policies must be properly configured for multi-tenant data isolation
+**Database Tables Required:**
+All tables must be created in Supabase with proper RLS policies:
+- `organizations` - Tenant definitions
+- `profiles` - User profiles with organization association
+- `memberships` - Membership records
+- `events` - Organization events
+- `subscribers` - Mailing list subscribers
+- `email_campaigns` - Email campaign tracking
+
+**Security Requirements:**
+- RLS policies must enforce organization-level data isolation
+- Super admins must have `organization_id = NULL` in profiles table
+- Add member requires user to sign up with Supabase Auth first (no service-role key exposure)
+- Resend API key must be configured for email functionality
 
 ## System Architecture
 
@@ -189,22 +220,46 @@ All critical limitations have been addressed (October 2025):
 ### Deployment Architecture
 
 **Production Stack:**
-- **Process Manager**: PM2 for Node.js process management
+- **Server OS**: Ubuntu 20.04+ LTS
+- **Runtime**: Node.js 20 LTS
+- **Process Manager**: PM2 (cluster mode with max instances)
 - **Web Server**: Nginx for reverse proxy and subdomain routing
-- **SSL**: Let's Encrypt (Certbot) for HTTPS
-- **Server**: Ubuntu/Debian Linux
+- **SSL**: Let's Encrypt (Certbot) for HTTPS with wildcard support
+- **Production Server**: Express.js serving built Vite static files
 
 **Nginx Configuration:**
-- Routes subdomains to appropriate org parameter
-- Handles SSL termination
-- Serves static files with caching
-- Proxies API requests to Express backend
+- Wildcard subdomain support for multi-tenancy (`*.domain.com`)
+- Static file caching (1 year expiry for immutable assets)
+- Gzip compression for all text assets
+- Security headers (CSP, X-Frame-Options, XSS Protection)
+- Rate limiting for API and auth endpoints
+- Health check endpoint at `/health`
 
 **PM2 Configuration:**
-- Single instance (fork mode) sufficient for current scale
-- Auto-restart on failure
-- Log rotation configured
-- Health check endpoint at `/health`
+- Cluster mode with max CPU core utilization
+- Auto-restart on failure with exponential backoff
+- Memory limits and leak detection (max 1GB per instance)
+- Log rotation and aggregation
+- Zero-downtime reloads
+- Startup script for auto-restart on server reboot
+
+**Deployment Script (`deploy.sh`):**
+- Automated Ubuntu server setup
+- Node.js 20, PM2, Nginx installation
+- Application build and deployment
+- SSL certificate generation (Let's Encrypt)
+- Firewall configuration (UFW)
+- Health checks and monitoring
+- Log rotation setup
+- Backup scripts (daily at 3 AM)
+- Fail2Ban security (rate limiting + auto-ban)
+
+**Usage:**
+```bash
+# Set domain and run deployment
+export DOMAIN=member.yourdomain.com
+sudo bash deploy.sh
+```
 
 ## External Dependencies
 
@@ -216,8 +271,14 @@ All critical limitations have been addressed (October 2025):
 - **Storage**: Future file upload support (logos, documents)
 - Environment variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 
-**Future Integrations (Documented but Not Implemented):**
-- **Resend API**: Email notifications
+**Resend (Email Service):**
+- **Transactional Emails**: Password resets, confirmations
+- **Marketing Emails**: Newsletters, campaigns, announcements
+- **Audience Management**: Subscriber lists with automatic unsubscribe handling
+- Environment variable: `RESEND_API_KEY`
+- Integration: Replit Connectors (automatic credential management)
+
+**Future Integrations:**
 - **Google Wallet API**: Digital membership cards
 - **Apple Wallet PassKit**: Digital membership cards
 

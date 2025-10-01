@@ -9,9 +9,9 @@ set -e
 APP_NAME="membership-system"
 APP_DIR="/var/www/$APP_NAME"
 APP_USER="membership"
-DOMAIN="member.ringing.org.uk"
-PORT="5173"
-NODE_VERSION="18"
+DOMAIN="${DOMAIN:-member.ringing.org.uk}"  # Can be overridden with environment variable
+PORT="5000"  # Changed to 5000 for production consistency
+NODE_VERSION="20"  # Updated to Node.js 20 LTS (2025 recommendation)
 
 # Colors for output
 RED='\033[0;31m'
@@ -304,27 +304,20 @@ deploy_application() {
         sudo -u $APP_USER tee .env > /dev/null <<EOF
 # Application Configuration
 NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://$DOMAIN
-NEXT_PUBLIC_DOMAIN=$DOMAIN
 PORT=$PORT
 
-# Supabase Configuration (REPLACE WITH YOUR VALUES)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+# Supabase Configuration (REPLACE WITH YOUR ACTUAL VALUES)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
-# Email Configuration (REPLACE WITH YOUR VALUES)
+# Resend Email Configuration (REPLACE WITH YOUR ACTUAL KEY)
 RESEND_API_KEY=re_your_resend_api_key
 
-# Security
-NEXTAUTH_SECRET=$(openssl rand -base64 32)
-NEXTAUTH_URL=https://$DOMAIN
-
-# Cron Secret
-CRON_SECRET=$(openssl rand -base64 32)
+# Replit Connectors (if using Replit integrations)
+REPLIT_CONNECTORS_HOSTNAME=connectors.replit.com
 EOF
-        warn "IMPORTANT: Please edit $APP_DIR/.env with your actual Supabase configuration values!"
-        warn "The application will not work until you set the correct NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY"
+        warn "IMPORTANT: Please edit $APP_DIR/.env with your actual configuration values!"
+        warn "Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, RESEND_API_KEY"
     fi
     
     # Install dependencies
