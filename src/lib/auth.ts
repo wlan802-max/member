@@ -63,7 +63,7 @@ export const auth = {
         last_name,
         role,
         organization_id,
-        organizations(
+        organizations:organization_id(
           id,
           name,
           slug,
@@ -81,8 +81,11 @@ export const auth = {
     if (!profile) {
       console.warn('No profile found for user:', user.id)
     } else {
-      console.log('Profile loaded:', { role: profile.role, org: profile.organizations?.slug, has_org: !!profile.organization_id })
+      const org = Array.isArray(profile.organizations) ? profile.organizations[0] : profile.organizations
+      console.log('Profile loaded:', { role: profile.role, org: org?.slug, has_org: !!profile.organization_id })
     }
+
+    const org = Array.isArray(profile?.organizations) ? profile.organizations[0] : profile?.organizations
 
     return {
       id: user.id,
@@ -92,13 +95,13 @@ export const auth = {
         first_name: profile.first_name,
         last_name: profile.last_name,
         role: profile.role,
-        organization: profile.organizations || undefined
+        organization: org || undefined
       } : undefined
     }
   },
 
   onAuthStateChange(callback: (user: User | null) => void) {
-    return supabase.auth.onAuthStateChange(async (event, session) => {
+    return supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const user = await this.getCurrentUser()
         callback(user)
