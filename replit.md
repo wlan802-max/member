@@ -73,8 +73,8 @@ The project is configured for Replit deployment:
 
 **Member Dashboard Views:**
 - ✅ Profile View: Edit personal information with proper security scoping (user_id + organization_id)
-- ⚠️ Memberships: Currently using mock data (requires implementing real Supabase memberships table queries)
-- ⚠️ Events View: Placeholder UI ready (requires events table creation in Supabase)
+- ✅ Memberships: Real Supabase queries with proper filtering by organization_id and profile_id
+- ✅ Events View: Real Supabase queries fetching upcoming published events with proper date filtering
 - ✅ Messages View: Display announcements from email_campaigns with DOMPurify HTML sanitization
 
 **Production Readiness Status:**
