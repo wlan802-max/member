@@ -247,12 +247,14 @@ export function MemberDashboard() {
             </CardHeader>
             <CardContent>
               <Button 
-                onClick={() => alert('Renew Membership feature coming soon!')}
+                disabled
                 data-testid="button-renew-membership"
                 style={{ backgroundColor: organization?.primary_color || '#3B82F6' }}
+                title="Renew membership feature coming soon"
               >
                 Renew Membership
               </Button>
+              <p className="text-sm text-gray-600 mt-2">Membership renewal coming soon</p>
             </CardContent>
           </Card>
         </div>
@@ -261,9 +263,9 @@ export function MemberDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card 
-          className="hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => alert('Digital Cards feature coming soon!')}
+          className="hover:shadow-md transition-shadow opacity-60"
           data-testid="card-digital-cards"
+          title="Digital cards feature coming soon"
         >
           <CardContent className="p-6 text-center">
             <CreditCard className="h-8 w-8 mx-auto mb-3" style={{ color: organization?.primary_color || '#3B82F6' }} />
@@ -334,7 +336,8 @@ export function MemberDashboard() {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => alert('Adding to Google Wallet...')}
+                  disabled
+                  title="Google Wallet integration coming soon"
                   data-testid="button-add-google-wallet"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -353,7 +356,8 @@ export function MemberDashboard() {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => alert('Downloading for Apple Wallet...')}
+                  disabled
+                  title="Apple Wallet integration coming soon"
                   data-testid="button-download-apple-wallet"
                 >
                   <Download className="h-4 w-4 mr-2" />
@@ -398,7 +402,8 @@ export function MemberDashboard() {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => alert(`Viewing details for ${membership.membership_year} membership`)}
+                      disabled
+                      title="Membership details coming soon"
                       data-testid={`button-view-details-${membership.id}`}
                     >
                       View Details
@@ -729,9 +734,9 @@ function AddMemberModal({ organizationId: _organizationId, onClose, onSuccess: _
 
     try {
       // Note: In a real implementation, you would also create a Supabase Auth user
-      // For now, we'll just create the profile (this will fail without a user_id)
-      alert('Add member functionality requires Supabase Auth integration. Please create the user in Supabase Auth first, then add their profile here.');
-      onClose();
+      setError('Add member functionality requires Supabase Auth integration. Please create the user in Supabase Auth first, then add their profile here.');
+      setLoading(false);
+      return;
     } catch (err) {
       console.error('Error adding member:', err);
       setError(err instanceof Error ? err.message : 'Failed to add member');

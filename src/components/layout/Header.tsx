@@ -44,7 +44,8 @@ export function Header() {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => alert('Profile page coming soon!')}
+                  disabled
+                  title="Access your profile from the dashboard"
                   data-testid="button-profile"
                 >
                   <User className="h-4 w-4 mr-2" />
