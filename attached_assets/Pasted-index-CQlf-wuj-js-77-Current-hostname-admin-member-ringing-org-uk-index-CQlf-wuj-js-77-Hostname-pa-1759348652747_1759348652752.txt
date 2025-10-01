@@ -1,0 +1,61 @@
+index-CQlf_wuj.js:77 Current hostname: admin.member.ringing.org.uk
+index-CQlf_wuj.js:77 Hostname parts: Array(5)
+index-CQlf_wuj.js:77 Production mode, detected subdomain: admin
+index-CQlf_wuj.js:77 Loading organization...
+index-CQlf_wuj.js:77 Checking if super admin subdomain for hostname: admin.member.ringing.org.uk
+index-CQlf_wuj.js:77 Production mode, is admin: true
+index-CQlf_wuj.js:77 Detected super admin subdomain
+index-CQlf_wuj.js:77 Current hostname: admin.member.ringing.org.uk
+index-CQlf_wuj.js:77 Hostname parts: Array(5)
+index-CQlf_wuj.js:77 Production mode, detected subdomain: admin
+index-CQlf_wuj.js:77 Current hostname: admin.member.ringing.org.uk
+index-CQlf_wuj.js:77 Hostname parts: Array(5)
+index-CQlf_wuj.js:77 Production mode, detected subdomain: admin
+index-CQlf_wuj.js:193 Super admin portal detected, user: null
+index-CQlf_wuj.js:193 No user, showing super admin auth
+index-CQlf_wuj.js:77 Current hostname: admin.member.ringing.org.uk
+index-CQlf_wuj.js:77 Hostname parts: Array(5)
+index-CQlf_wuj.js:77 Production mode, detected subdomain: admin
+index-CQlf_wuj.js:193 Super admin portal detected, user: null
+index-CQlf_wuj.js:193 No user, showing super admin auth
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable
+your-project.supabase.co/auth/v1/token?grant_type=password:1  Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+index-CQlf_wuj.js:63 TypeError: Failed to fetch
+    at index-CQlf_wuj.js:63:3221
+    at zx (index-CQlf_wuj.js:63:9176)
+    at ne (index-CQlf_wuj.js:63:8925)
+    at Qx.signInWithPassword (index-CQlf_wuj.js:63:22758)
+    at Object.signIn (index-CQlf_wuj.js:64:34342)
+    at signIn (index-CQlf_wuj.js:77:1014)
+    at u (index-CQlf_wuj.js:193:100428)
+    at Object.dg (index-CQlf_wuj.js:37:9855)
+    at fg (index-CQlf_wuj.js:37:10009)
+    at mg (index-CQlf_wuj.js:37:10066)
+zx @ index-CQlf_wuj.js:63
+your-project.supabase.co/auth/v1/token?grant_type=password:1  Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+index-CQlf_wuj.js:63 TypeError: Failed to fetch
+    at index-CQlf_wuj.js:63:3221
+    at zx (index-CQlf_wuj.js:63:9176)
+    at ne (index-CQlf_wuj.js:63:8925)
+    at Qx.signInWithPassword (index-CQlf_wuj.js:63:22758)
+    at Object.signIn (index-CQlf_wuj.js:64:34342)
+    at signIn (index-CQlf_wuj.js:77:1014)
+    at u (index-CQlf_wuj.js:193:100428)
+    at Object.dg (index-CQlf_wuj.js:37:9855)
+    at fg (index-CQlf_wuj.js:37:10009)
+    at mg (index-CQlf_wuj.js:37:10066)
+zx @ index-CQlf_wuj.js:63
+your-project.supabase.co/auth/v1/token?grant_type=password:1  Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+index-CQlf_wuj.js:63 TypeError: Failed to fetch
+    at index-CQlf_wuj.js:63:3221
+    at zx (index-CQlf_wuj.js:63:9176)
+    at ne (index-CQlf_wuj.js:63:8925)
+    at Qx.signInWithPassword (index-CQlf_wuj.js:63:22758)
+    at Object.signIn (index-CQlf_wuj.js:64:34342)
+    at signIn (index-CQlf_wuj.js:77:1014)
+    at u (index-CQlf_wuj.js:193:100428)
+    at Object.dg (index-CQlf_wuj.js:37:9855)
+    at fg (index-CQlf_wuj.js:37:10009)
+    at mg (index-CQlf_wuj.js:37:10066)
+zx @ index-CQlf_wuj.js:63
