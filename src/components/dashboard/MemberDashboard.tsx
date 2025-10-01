@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { useTenant } from '@/hooks/useTenant'
 import { supabase } from '@/lib/supabase/client'
+import DOMPurify from 'dompurify'
 import { 
   CreditCard, 
   Calendar, 
@@ -410,6 +411,21 @@ export function MemberDashboard() {
         </CardContent>
       </Card>
         </div>
+      )}
+
+      {/* Profile View */}
+      {activeView === 'profile' && user && (
+        <ProfileView user={user} organization={organization} onBack={() => setActiveView('dashboard')} />
+      )}
+
+      {/* Events View */}
+      {activeView === 'events' && organization && (
+        <EventsView organizationId={organization.id} onBack={() => setActiveView('dashboard')} />
+      )}
+
+      {/* Messages View */}
+      {activeView === 'messages' && organization && (
+        <MessagesView organizationId={organization.id} onBack={() => setActiveView('dashboard')} />
       )}
 
       {/* Admin - Members View */}
@@ -935,6 +951,365 @@ function EditMemberModal({ member, onClose, onSuccess }: EditMemberModalProps) {
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+// Profile View Component
+interface ProfileViewProps {
+  user: any;
+  organization: any;
+  onBack: () => void;
+}
+
+function ProfileView({ user, organization, onBack }: ProfileViewProps) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: ''
+  });
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchProfile();
+  }, [user?.id, organization?.id]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('organization_id', organization.id)
+        .single();
+
+      if (error) throw error;
+      
+      setProfile(data);
+      setFormData({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        email: data.email || '',
+        phone: data.phone || ''
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setError('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          email: formData.email,
+          phone: formData.phone
+        })
+        .eq('id', profile.id)
+        .eq('organization_id', organization.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      setSuccess('Profile updated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" onClick={onBack} data-testid="button-back-to-dashboard">
+          ← Back to Dashboard
+        </Button>
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">My Profile</h2>
+        <Button variant="outline" onClick={onBack} data-testid="button-back-to-dashboard">
+          ← Back to Dashboard
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Personal Information</CardTitle>
+          <CardDescription>Update your profile details</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">First Name</label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  required
+                  data-testid="input-first-name"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Last Name</label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  required
+                  data-testid="input-last-name"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                data-testid="input-email"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                data-testid="input-phone"
+              />
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <h3 className="font-medium text-sm">Account Information</h3>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Organization:</span> {organization.name}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Role:</span> {profile?.role || 'member'}
+              </p>
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Status:</span>{' '}
+                <Badge variant={profile?.is_active ? 'default' : 'secondary'}>
+                  {profile?.is_active ? 'Active' : 'Inactive'}
+                </Badge>
+              </p>
+            </div>
+
+            {success && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700" data-testid="alert-success">
+                {success}
+              </div>
+            )}
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700" data-testid="alert-error">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={saving}
+                data-testid="button-save-profile"
+                style={{ backgroundColor: organization?.primary_color || '#3B82F6' }}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Events View Component
+interface EventsViewProps {
+  organizationId: string;
+  onBack: () => void;
+}
+
+function EventsView({ organizationId, onBack }: EventsViewProps) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Events</h2>
+        <Button variant="outline" onClick={onBack} data-testid="button-back-to-dashboard">
+          ← Back to Dashboard
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Upcoming Events
+          </CardTitle>
+          <CardDescription>View organization events and activities</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium mb-2">Events Feature Coming Soon</h3>
+            <p className="text-gray-600 mb-4">
+              The events feature will allow you to view and register for organization events.
+            </p>
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-left max-w-2xl mx-auto">
+              <p className="font-medium mb-2">Database Setup Required:</p>
+              <p className="text-gray-700">
+                To enable events, create an <code className="bg-white px-1 rounded">events</code> table in Supabase with columns for:
+                title, description, location, start_date, end_date, organization_id, registration_url, etc.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Messages View Component
+interface MessagesViewProps {
+  organizationId: string;
+  onBack: () => void;
+}
+
+function MessagesView({ organizationId, onBack }: MessagesViewProps) {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [organizationId]);
+
+  const fetchMessages = async () => {
+    try {
+      const { data, error} = await supabase
+        .from('email_campaigns')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('status', 'sent')
+        .order('sent_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" onClick={onBack} data-testid="button-back-to-dashboard">
+          ← Back to Dashboard
+        </Button>
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-20 bg-gray-200 rounded"></div>
+              <div className="h-20 bg-gray-200 rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Messages & Announcements</h2>
+        <Button variant="outline" onClick={onBack} data-testid="button-back-to-dashboard">
+          ← Back to Dashboard
+        </Button>
+      </div>
+
+      {messages.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium mb-2">No Messages Yet</h3>
+            <p className="text-gray-600">
+              Organization announcements and updates will appear here.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {messages.map((message) => (
+            <Card key={message.id} data-testid={`message-${message.id}`}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-lg">{message.subject}</CardTitle>
+                    <CardDescription>
+                      {formatDate(message.sent_at)}
+                      {message.recipient_count > 0 && ` • Sent to ${message.recipient_count} members`}
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary">
+                    {message.opened_count || 0} opened
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.content) }}
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
