@@ -725,8 +725,9 @@ interface AddMemberModalProps {
   onSuccess: () => void;
 }
 
-function AddMemberModal({ organizationId: _organizationId, onClose, onSuccess: _onSuccess }: AddMemberModalProps) {
+function AddMemberModal({ organizationId, onClose, onSuccess }: AddMemberModalProps) {
   const [formData, setFormData] = useState({
+    user_id: '',
     email: '',
     first_name: '',
     last_name: '',
@@ -742,13 +743,45 @@ function AddMemberModal({ organizationId: _organizationId, onClose, onSuccess: _
     setError(null);
 
     try {
-      // Note: In a real implementation, you would also create a Supabase Auth user
-      setError('Add member functionality requires Supabase Auth integration. Please create the user in Supabase Auth first, then add their profile here.');
-      setLoading(false);
-      return;
+      // Validate user_id is provided
+      if (!formData.user_id) {
+        setError('User ID is required. The user must first create a Supabase Auth account.');
+        setLoading(false);
+        return;
+      }
+
+      // Create profile for existing Supabase Auth user
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: formData.user_id,
+          organization_id: organizationId,
+          email: formData.email,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          phone: formData.phone || null,
+          role: formData.role,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      console.log('Member profile created:', data);
+      toast.success('Member added successfully', {
+        description: `${formData.first_name} ${formData.last_name} has been added to the organization`
+      });
+      
+      onSuccess();
+      onClose();
     } catch (err) {
       console.error('Error adding member:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add member');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add member';
+      setError(errorMessage);
+      toast.error('Failed to add member', {
+        description: errorMessage
+      });
     } finally {
       setLoading(false);
     }
@@ -762,7 +795,21 @@ function AddMemberModal({ organizationId: _organizationId, onClose, onSuccess: _
           <CardDescription>Create a new member account</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+            <p className="font-medium mb-1">Note:</p>
+            <p>The user must first sign up with Supabase Auth. After they sign up, you can add their profile here using their User ID from the Supabase Auth dashboard.</p>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">User ID (from Supabase Auth)</label>
+              <Input
+                value={formData.user_id}
+                onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+                placeholder="Enter Supabase Auth user_id"
+                required
+                data-testid="input-user-id"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">First Name</label>
