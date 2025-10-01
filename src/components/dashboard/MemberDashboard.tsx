@@ -486,7 +486,9 @@ interface MembersAdminViewProps {
 }
 
 function MembersAdminView({ organizationId }: MembersAdminViewProps) {
+  const [memberTab, setMemberTab] = useState<'active' | 'pending'>('active');
   const [members, setMembers] = useState<any[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
@@ -494,6 +496,7 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   useEffect(() => {
     fetchMembers();
+    fetchPendingUsers();
   }, [organizationId]);
 
   const fetchMembers = async () => {
@@ -502,6 +505,7 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
         .from('profiles')
         .select('*')
         .eq('organization_id', organizationId)
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -510,6 +514,22 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
       console.error('Error fetching members:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching pending users:', error);
     }
   };
 
@@ -524,6 +544,51 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
       await fetchMembers();
     } catch (error) {
       console.error('Error toggling member status:', error);
+    }
+  };
+
+  const handleApproveUser = async (userId: string, role: 'member' | 'admin' = 'member') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          status: 'active',
+          is_active: true,
+          role: role,
+          status_updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success('User approved successfully');
+      await fetchMembers();
+      await fetchPendingUsers();
+    } catch (error) {
+      console.error('Error approving user:', error);
+      toast.error('Failed to approve user');
+    }
+  };
+
+  const handleRejectUser = async (userId: string, reason: string = '') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          status: 'rejected',
+          is_active: false,
+          rejection_note: reason,
+          status_updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success('User rejected');
+      await fetchPendingUsers();
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      toast.error('Failed to reject user');
     }
   };
 
@@ -546,47 +611,134 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {members.map((member) => (
-            <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`member-row-${member.id}`}>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium">{member.first_name} {member.last_name}</h3>
-                  <Badge variant={member.is_active ? 'default' : 'secondary'}>
-                    {member.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                  <Badge variant="outline">{member.role}</Badge>
-                </div>
-                <p className="text-sm text-gray-600">{member.email}</p>
-                {member.phone && <p className="text-xs text-gray-500">{member.phone}</p>}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedMember(member);
-                    setShowEditMember(true);
-                  }}
-                  data-testid={`button-edit-member-${member.id}`}
-                >
-                  Edit
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant={member.is_active ? 'outline' : 'default'}
-                  onClick={() => handleToggleActive(member.id, member.is_active)}
-                  data-testid={`button-toggle-member-${member.id}`}
-                >
-                  {member.is_active ? 'Deactivate' : 'Activate'}
-                </Button>
-              </div>
-            </div>
-          ))}
-          {members.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No members found</p>
-          )}
+        {/* Sub-tabs for Active/Pending */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="flex gap-6">
+            <button
+              onClick={() => setMemberTab('active')}
+              className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                memberTab === 'active'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-active-members"
+            >
+              Active Members ({members.length})
+            </button>
+            <button
+              onClick={() => setMemberTab('pending')}
+              className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                memberTab === 'pending'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-pending-users"
+            >
+              Pending Approval ({pendingUsers.length})
+            </button>
+          </nav>
         </div>
+
+        {/* Active Members List */}
+        {memberTab === 'active' && (
+          <div className="space-y-4">
+            {members.map((member) => (
+              <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`member-row-${member.id}`}>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">{member.first_name} {member.last_name}</h3>
+                    <Badge variant={member.is_active ? 'default' : 'secondary'}>
+                      {member.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                    <Badge variant="outline">{member.role}</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">{member.email}</p>
+                  {member.phone && <p className="text-xs text-gray-500">{member.phone}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedMember(member);
+                      setShowEditMember(true);
+                    }}
+                    data-testid={`button-edit-member-${member.id}`}
+                  >
+                    Edit
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={member.is_active ? 'outline' : 'default'}
+                    onClick={() => handleToggleActive(member.id, member.is_active)}
+                    data-testid={`button-toggle-member-${member.id}`}
+                  >
+                    {member.is_active ? 'Deactivate' : 'Activate'}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {members.length === 0 && (
+              <p className="text-center text-gray-500 py-8">No active members found</p>
+            )}
+          </div>
+        )}
+
+        {/* Pending Users List */}
+        {memberTab === 'pending' && (
+          <div className="space-y-4">
+            {pendingUsers.map((user) => (
+              <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-yellow-50" data-testid={`pending-user-row-${user.id}`}>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">{user.first_name} {user.last_name}</h3>
+                    <Badge variant="outline" className="bg-yellow-100">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Pending Approval
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-600">{user.email}</p>
+                  {user.phone && <p className="text-xs text-gray-500">{user.phone}</p>}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Signed up: {formatDate(user.created_at)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="default"
+                    onClick={() => handleApproveUser(user.id, 'member')}
+                    data-testid={`button-approve-user-${user.id}`}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Approve as Member
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleApproveUser(user.id, 'admin')}
+                    data-testid={`button-approve-admin-${user.id}`}
+                  >
+                    Approve as Admin
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={() => handleRejectUser(user.id, 'Rejected by admin')}
+                    data-testid={`button-reject-user-${user.id}`}
+                  >
+                    <AlertCircle className="h-4 w-4 mr-1" />
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {pendingUsers.length === 0 && (
+              <p className="text-center text-gray-500 py-8">No pending users</p>
+            )}
+          </div>
+        )}
       </CardContent>
 
       {showAddMember && (

@@ -8,6 +8,7 @@ export interface User {
     first_name: string
     last_name: string
     role: string
+    status: 'pending' | 'active' | 'suspended' | 'rejected'
     organization?: {
       id: string
       name: string
@@ -62,6 +63,7 @@ export const auth = {
         first_name,
         last_name,
         role,
+        status,
         organization_id,
         organizations:organization_id(
           id,
@@ -95,6 +97,7 @@ export const auth = {
         first_name: profile.first_name,
         last_name: profile.last_name,
         role: profile.role,
+        status: profile.status,
         organization: org || undefined
       } : undefined
     }

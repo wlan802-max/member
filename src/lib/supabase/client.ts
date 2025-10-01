@@ -69,7 +69,12 @@ export type Database = {
           phone: string | null
           address: any | null
           role: string
+          status: 'pending' | 'active' | 'suspended' | 'rejected'
           is_active: boolean
+          pending_reason: string | null
+          rejection_note: string | null
+          status_updated_at: string | null
+          status_updated_by: string | null
           metadata: any
           created_at: string
           updated_at: string
@@ -84,7 +89,12 @@ export type Database = {
           phone?: string | null
           address?: any | null
           role?: string
+          status?: 'pending' | 'active' | 'suspended' | 'rejected'
           is_active?: boolean
+          pending_reason?: string | null
+          rejection_note?: string | null
+          status_updated_at?: string | null
+          status_updated_by?: string | null
           metadata?: any
           created_at?: string
           updated_at?: string
@@ -99,7 +109,12 @@ export type Database = {
           phone?: string | null
           address?: any | null
           role?: string
+          status?: 'pending' | 'active' | 'suspended' | 'rejected'
           is_active?: boolean
+          pending_reason?: string | null
+          rejection_note?: string | null
+          status_updated_at?: string | null
+          status_updated_by?: string | null
           metadata?: any
           created_at?: string
           updated_at?: string
