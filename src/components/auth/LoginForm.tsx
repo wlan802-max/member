@@ -7,12 +7,15 @@ import { useTenant } from '@/hooks/useTenant'
 import { Mail, Lock, AlertCircle } from 'lucide-react'
 
 export function LoginForm() {
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { signIn } = useAuth()
+  const { signIn, signUp } = useAuth()
   const { organization, loading: tenantLoading } = useTenant()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,10 +23,28 @@ export function LoginForm() {
     setLoading(true)
     setError(null)
 
-    const { error } = await signIn(email, password)
+    if (mode === 'login') {
+      const { error } = await signIn(email, password)
+      if (error) {
+        setError(error.message)
+      }
+    } else {
+      // Sign up mode
+      if (!organization?.slug) {
+        setError('Organization information is missing')
+        setLoading(false)
+        return
+      }
 
-    if (error) {
-      setError(error.message)
+      const { error } = await signUp(email, password, {
+        first_name: firstName,
+        last_name: lastName,
+        organization_slug: organization.slug
+      })
+
+      if (error) {
+        setError(error.message)
+      }
     }
 
     setLoading(false)
@@ -96,7 +117,7 @@ export function LoginForm() {
             {organization?.name}
           </CardTitle>
           <CardDescription>
-            Sign in to your member account
+            {mode === 'login' ? 'Sign in to your member account' : 'Create a new account'}
           </CardDescription>
         </CardHeader>
 
@@ -106,6 +127,37 @@ export function LoginForm() {
               <div className="flex items-center space-x-2 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
                 <span>{error}</span>
+              </div>
+            )}
+
+            {mode === 'signup' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="firstName" className="text-sm font-medium">
+                    First Name
+                  </label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="Enter your first name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="lastName" className="text-sm font-medium">
+                    Last Name
+                  </label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Enter your last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
             )}
 
@@ -151,21 +203,45 @@ export function LoginForm() {
               disabled={loading}
               style={{ backgroundColor: organization?.primary_color }}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading 
+                ? (mode === 'login' ? 'Signing in...' : 'Creating account...') 
+                : (mode === 'login' ? 'Sign In' : 'Sign Up')
+              }
             </Button>
           </form>
 
           <div className="mt-6">
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <a
-                  href="#"
-                  className="font-medium hover:underline"
-                  style={{ color: organization?.primary_color }}
-                >
-                  Contact your administrator
-                </a>
+                {mode === 'login' ? (
+                  <>
+                    Don't have an account?{' '}
+                    <button
+                      onClick={() => {
+                        setMode('signup')
+                        setError(null)
+                      }}
+                      className="font-medium hover:underline"
+                      style={{ color: organization?.primary_color }}
+                    >
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <button
+                      onClick={() => {
+                        setMode('login')
+                        setError(null)
+                      }}
+                      className="font-medium hover:underline"
+                      style={{ color: organization?.primary_color }}
+                    >
+                      Sign in
+                    </button>
+                  </>
+                )}
               </p>
             </div>
           </div>
