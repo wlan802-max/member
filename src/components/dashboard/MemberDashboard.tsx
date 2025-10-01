@@ -34,6 +34,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages'>('dashboard')
 
   useEffect(() => {
     // For demo purposes, we'll create some mock data since Supabase isn't connected
@@ -186,7 +187,11 @@ export function MemberDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button style={{ backgroundColor: organization?.primary_color || '#3B82F6' }}>
+              <Button 
+                onClick={() => alert('Renew Membership feature coming soon!')}
+                data-testid="button-renew-membership"
+                style={{ backgroundColor: organization?.primary_color || '#3B82F6' }}
+              >
                 Renew Membership
               </Button>
             </CardContent>
@@ -196,7 +201,11 @@ export function MemberDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => alert('Digital Cards feature coming soon!')}
+          data-testid="card-digital-cards"
+        >
           <CardContent className="p-6 text-center">
             <CreditCard className="h-8 w-8 mx-auto mb-3" style={{ color: organization?.primary_color || '#3B82F6' }} />
             <h3 className="font-semibold mb-2">Digital Cards</h3>
@@ -204,7 +213,11 @@ export function MemberDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => setActiveView('profile')}
+          data-testid="card-profile"
+        >
           <CardContent className="p-6 text-center">
             <User className="h-8 w-8 mx-auto mb-3" style={{ color: organization?.primary_color || '#3B82F6' }} />
             <h3 className="font-semibold mb-2">Profile</h3>
@@ -212,7 +225,11 @@ export function MemberDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => setActiveView('events')}
+          data-testid="card-events"
+        >
           <CardContent className="p-6 text-center">
             <Calendar className="h-8 w-8 mx-auto mb-3" style={{ color: organization?.primary_color || '#3B82F6' }} />
             <h3 className="font-semibold mb-2">Events</h3>
@@ -220,7 +237,11 @@ export function MemberDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card 
+          className="hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => setActiveView('messages')}
+          data-testid="card-messages"
+        >
           <CardContent className="p-6 text-center">
             <Mail className="h-8 w-8 mx-auto mb-3" style={{ color: organization?.primary_color || '#3B82F6' }} />
             <h3 className="font-semibold mb-2">Messages</h3>
@@ -251,7 +272,12 @@ export function MemberDashboard() {
                 <p className="text-sm text-gray-600">
                   Add your membership card to Google Wallet for easy access on Android devices.
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => alert('Adding to Google Wallet...')}
+                  data-testid="button-add-google-wallet"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add to Google Wallet
                 </Button>
@@ -265,7 +291,12 @@ export function MemberDashboard() {
                 <p className="text-sm text-gray-600">
                   Download your membership pass for Apple Wallet on iOS devices.
                 </p>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => alert('Downloading for Apple Wallet...')}
+                  data-testid="button-download-apple-wallet"
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Download for Apple Wallet
                 </Button>
@@ -305,7 +336,12 @@ export function MemberDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   {membership.status === 'active' && (
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => alert(`Viewing details for ${membership.membership_year} membership`)}
+                      data-testid={`button-view-details-${membership.id}`}
+                    >
                       View Details
                     </Button>
                   )}

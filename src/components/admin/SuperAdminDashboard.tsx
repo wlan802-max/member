@@ -108,7 +108,11 @@ export function SuperAdminDashboard() {
           <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">Manage all organizations and system settings</p>
         </div>
-        <Button onClick={() => setShowCreateForm(true)} className="bg-blue-600 hover:bg-blue-700">
+        <Button 
+          onClick={() => setShowCreateForm(true)} 
+          className="bg-blue-600 hover:bg-blue-700"
+          data-testid="button-create-organization"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Create Organization
         </Button>
@@ -130,6 +134,7 @@ export function SuperAdminDashboard() {
                   onClick={() => fetchOrganizations()}
                   variant="outline"
                   className="text-sm"
+                  data-testid="button-retry-load-orgs"
                 >
                   Retry
                 </Button>
@@ -203,6 +208,7 @@ export function SuperAdminDashboard() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
+            data-testid="input-search-organizations"
           />
         </div>
       </div>
@@ -260,15 +266,35 @@ export function SuperAdminDashboard() {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => alert(`Viewing organization: ${org.name}\nSlug: ${org.slug}\nMembers: ${org.member_count || 0}`)}
+                    data-testid={`button-view-org-${org.id}`}
+                  >
                     <Eye className="h-3 w-3 mr-1" />
                     View
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => alert(`Edit organization: ${org.name}\n(Feature coming soon)`)}
+                    data-testid={`button-edit-org-${org.id}`}
+                  >
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
-                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete "${org.name}"?`)) {
+                        alert('Delete functionality coming soon!')
+                      }
+                    }}
+                    data-testid={`button-delete-org-${org.id}`}
+                  >
                     <Trash2 className="h-3 w-3 mr-1" />
                     Delete
                   </Button>

@@ -41,19 +41,34 @@ export function Header() {
               </span>
               
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => alert('Profile page coming soon!')}
+                  data-testid="button-profile"
+                >
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </Button>
                 
                 {isAdmin && (
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => alert('Admin panel coming soon!')}
+                    data-testid="button-admin"
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Admin
                   </Button>
                 )}
                 
-                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleSignOut}
+                  data-testid="button-signout"
+                >
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </Button>
