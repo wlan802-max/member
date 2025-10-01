@@ -29,13 +29,20 @@ export function LoginForm() {
   }, [])
 
   const loadOrganizations = async () => {
+    console.log('Loading organizations from Supabase...')
     const { data, error } = await supabase
       .from('organizations')
       .select('slug, name')
       .eq('is_active', true)
       .order('name')
 
-    if (data && !error) {
+    console.log('Organizations query result:', { data, error })
+
+    if (error) {
+      console.error('Error loading organizations:', error)
+      setError(`Failed to load organizations: ${error.message}`)
+    } else if (data) {
+      console.log('Organizations loaded:', data)
       setOrganizations(data)
       if (subdomain) {
         setSelectedOrg(subdomain)
@@ -88,9 +95,17 @@ export function LoginForm() {
           <CardContent>
             <div className="space-y-3">
               {organizations.length === 0 ? (
-                <div className="flex items-center justify-center space-x-2 text-gray-600 py-8">
-                  <AlertCircle className="h-5 w-5" />
-                  <span>Loading organizations...</span>
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+                  <p className="text-gray-900 font-medium mb-2">No Organizations Available</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Unable to load organizations. This may be due to database access restrictions.
+                  </p>
+                  {error && (
+                    <p className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                      {error}
+                    </p>
+                  )}
                 </div>
               ) : (
                 organizations.map((org) => (
