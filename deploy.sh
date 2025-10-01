@@ -295,13 +295,10 @@ deploy_application() {
         error "No git repository found. Please run this script from your project directory or provide a git repository URL."
     fi
     
-    # Switch to app user and directory
-    cd $APP_DIR
-    
     # Create environment file
-    if [ ! -f ".env" ]; then
+    if [ ! -f "$APP_DIR/.env" ]; then
         log "Creating environment file..."
-        sudo -u $APP_USER tee .env > /dev/null <<EOF
+        sudo -u $APP_USER tee $APP_DIR/.env > /dev/null <<EOF
 # Application Configuration
 NODE_ENV=production
 PORT=$PORT
@@ -322,18 +319,18 @@ EOF
     
     # Install dependencies
     log "Installing dependencies..."
-    sudo -u $APP_USER npm ci
+    cd $APP_DIR && sudo -u $APP_USER npm ci
     
     # Install production server dependencies
-    sudo -u $APP_USER npm install express --save
+    cd $APP_DIR && sudo -u $APP_USER npm install express --save
     
     # Build application
     log "Building application..."
-    sudo -u $APP_USER npm run build
+    cd $APP_DIR && sudo -u $APP_USER npm run build
     
     # Clean up dev dependencies after build
     log "Cleaning up dev dependencies..."
-    sudo -u $APP_USER npm prune --omit=dev
+    cd $APP_DIR && sudo -u $APP_USER npm prune --omit=dev
 }
 
 # Setup PM2 configuration
@@ -390,9 +387,8 @@ EOF
     
     # Start application with PM2
     log "Starting application with PM2..."
-    cd $APP_DIR
-    sudo -u $APP_USER pm2 start ecosystem.config.cjs
-    sudo -u $APP_USER pm2 save
+    cd $APP_DIR && sudo -u $APP_USER pm2 start ecosystem.config.cjs
+    cd $APP_DIR && sudo -u $APP_USER pm2 save
     
     # Setup PM2 startup script
     sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $APP_USER --hp $APP_DIR
