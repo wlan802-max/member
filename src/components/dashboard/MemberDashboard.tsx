@@ -21,6 +21,7 @@ import {
   Plus
 } from 'lucide-react'
 import { FormBuilder } from '@/components/admin/FormBuilder'
+import { MembershipTypesEditor } from '@/components/admin/MembershipTypesEditor'
 
 // Utility function for date formatting
 const formatDate = (dateString: string) => {
@@ -47,7 +48,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships'>('dashboard')
 
   useEffect(() => {
     // Check URL hash for navigation
@@ -212,6 +213,17 @@ export function MemberDashboard() {
                   data-testid="tab-mailing"
                 >
                   Mailing List
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-memberships')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-memberships'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-memberships"
+                >
+                  Membership Types
                 </button>
                 <button
                   onClick={() => setActiveView('admin-forms')}
@@ -487,6 +499,11 @@ export function MemberDashboard() {
       {/* Admin - Mailing List View */}
       {activeView === 'admin-mailing' && isAdmin && organization && (
         <MailingAdminView organizationId={organization.id} />
+      )}
+
+      {/* Admin - Membership Types View */}
+      {activeView === 'admin-memberships' && isAdmin && organization && (
+        <MembershipTypesEditor organizationId={organization.id} />
       )}
 
       {/* Admin - Signup Forms View */}
