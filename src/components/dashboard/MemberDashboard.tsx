@@ -20,6 +20,7 @@ import {
   Download,
   Plus
 } from 'lucide-react'
+import { FormBuilder } from '@/components/admin/FormBuilder'
 
 // Utility function for date formatting
 const formatDate = (dateString: string) => {
@@ -46,7 +47,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms'>('dashboard')
 
   useEffect(() => {
     // Check URL hash for navigation
@@ -211,6 +212,17 @@ export function MemberDashboard() {
                   data-testid="tab-mailing"
                 >
                   Mailing List
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-forms')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-forms'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-forms"
+                >
+                  Signup Forms
                 </button>
               </>
             )}
@@ -475,6 +487,11 @@ export function MemberDashboard() {
       {/* Admin - Mailing List View */}
       {activeView === 'admin-mailing' && isAdmin && organization && (
         <MailingAdminView organizationId={organization.id} />
+      )}
+
+      {/* Admin - Signup Forms View */}
+      {activeView === 'admin-forms' && isAdmin && organization && (
+        <FormBuilder organizationId={organization.id} />
       )}
     </div>
   )
