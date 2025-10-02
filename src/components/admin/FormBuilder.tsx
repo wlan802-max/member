@@ -87,6 +87,9 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
     version: 1,
     sections: []
   });
+  const [formType, setFormType] = useState<'signup' | 'renewal' | 'both'>('signup');
+  const [formTitle, setFormTitle] = useState('Membership Signup Form');
+  const [formDescription, setFormDescription] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('builder');
@@ -109,64 +112,20 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
 
       if (error) throw error;
 
-      if (data?.form_schema) {
-        setSchema(data.form_schema as FormSchema);
+      if (data) {
+        // Support both old (form_schema) and new (schema_data) column names for backward compatibility
+        const schemaData = (data.schema_data || data.form_schema) as FormSchema;
+        if (schemaData) {
+          setSchema(schemaData);
+          setFormType(data.form_type || 'signup');
+          setFormTitle(data.title || 'Membership Form');
+          setFormDescription(data.description || '');
+        } else {
+          // If no schema data at all, use default
+          setDefaultSchema();
+        }
       } else {
-        setSchema({
-          version: 1,
-          sections: [
-            {
-              id: 'personal_info',
-              title: 'Personal Information',
-              description: 'Please provide your basic information',
-              fields: [
-                {
-                  id: 'title',
-                  type: 'text',
-                  label: 'Title',
-                  required: false
-                },
-                {
-                  id: 'date_of_birth',
-                  type: 'date',
-                  label: 'Date of Birth',
-                  required: true
-                },
-                {
-                  id: 'address',
-                  type: 'text',
-                  label: 'Address',
-                  required: true
-                },
-                {
-                  id: 'postcode',
-                  type: 'text',
-                  label: 'Postcode',
-                  required: true
-                },
-                {
-                  id: 'phone',
-                  type: 'tel',
-                  label: 'Phone Number',
-                  required: true
-                }
-              ]
-            },
-            {
-              id: 'membership',
-              title: 'Membership Selection',
-              description: 'Choose your membership type',
-              fields: [
-                {
-                  id: 'membership_selection',
-                  type: 'membership_selection',
-                  label: 'Select Membership Type(s)',
-                  required: true
-                }
-              ]
-            }
-          ]
-        });
+        setDefaultSchema();
       }
     } catch (error) {
       console.error('Error loading form schema:', error);
@@ -176,13 +135,77 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
     }
   };
 
+  const setDefaultSchema = () => {
+    setSchema({
+      version: 1,
+      sections: [
+        {
+          id: 'personal_info',
+          title: 'Personal Information',
+          description: 'Please provide your basic information',
+          fields: [
+            {
+              id: 'title',
+              type: 'text',
+              label: 'Title',
+              required: false
+            },
+            {
+              id: 'date_of_birth',
+              type: 'date',
+              label: 'Date of Birth',
+              required: true
+            },
+            {
+              id: 'address',
+              type: 'text',
+              label: 'Address',
+              required: true
+            },
+            {
+              id: 'postcode',
+              type: 'text',
+              label: 'Postcode',
+              required: true
+            },
+            {
+              id: 'phone',
+              type: 'tel',
+              label: 'Phone Number',
+              required: true
+            }
+          ]
+        },
+        {
+          id: 'membership',
+          title: 'Membership Selection',
+          description: 'Choose your membership type',
+          fields: [
+            {
+              id: 'membership_selection',
+              type: 'membership_selection',
+              label: 'Select Membership Type(s)',
+              required: true
+            }
+          ]
+        }
+      ]
+    });
+  };
+
   const saveFormSchema = async () => {
+    // Validate form title
+    if (!formTitle.trim()) {
+      toast.error('Please provide a form title');
+      return;
+    }
+
     try {
       setSaving(true);
 
       const { data: existing } = await supabase
         .from('organization_form_schemas')
-        .select('id, version')
+        .select('id, schema_version')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
         .maybeSingle();
@@ -196,15 +219,18 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
         if (deactivateError) throw deactivateError;
       }
 
-      const newVersion = (existing?.version || 0) + 1;
+      const newVersion = (existing?.schema_version || 0) + 1;
       const newSchema = { ...schema, version: newVersion };
 
       const { error: insertError } = await supabase
         .from('organization_form_schemas')
         .insert({
           organization_id: organizationId,
-          version: newVersion,
-          form_schema: newSchema,
+          schema_version: newVersion,
+          title: formTitle,
+          description: formDescription || null,
+          schema_data: newSchema,
+          form_type: formType,
           is_active: true
         });
 
@@ -308,9 +334,9 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
     <div className="container mx-auto py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Signup Form Builder</h1>
+          <h1 className="text-3xl font-bold">Form Builder</h1>
           <p className="text-muted-foreground mt-2">
-            Customize your organization's membership signup form
+            Create and customize membership forms
           </p>
         </div>
         <Button onClick={saveFormSchema} disabled={saving} data-testid="button-save-form">
@@ -318,6 +344,56 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
           {saving ? 'Saving...' : 'Save Form'}
         </Button>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Form Configuration</CardTitle>
+          <CardDescription>Configure basic form settings and type</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="form-type">Form Type</Label>
+            <Select value={formType} onValueChange={(value: any) => setFormType(value)}>
+              <SelectTrigger id="form-type" data-testid="select-form-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="signup">New Signup Form</SelectItem>
+                <SelectItem value="renewal">Renewal Form</SelectItem>
+                <SelectItem value="both">Both Signup & Renewal</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground mt-1">
+              {formType === 'signup' && 'This form will be used for new member signups'}
+              {formType === 'renewal' && 'This form will be used for membership renewals'}
+              {formType === 'both' && 'This form can be used for both signups and renewals'}
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="form-title">Form Title</Label>
+            <Input
+              id="form-title"
+              value={formTitle}
+              onChange={(e) => setFormTitle(e.target.value)}
+              placeholder="Membership Signup Form"
+              data-testid="input-form-title"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="form-description">Form Description (optional)</Label>
+            <Textarea
+              id="form-description"
+              value={formDescription}
+              onChange={(e) => setFormDescription(e.target.value)}
+              placeholder="Additional information about this form..."
+              rows={2}
+              data-testid="input-form-description"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="mb-6 flex gap-2 border-b">
         <button
