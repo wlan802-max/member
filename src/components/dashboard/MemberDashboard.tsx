@@ -1116,6 +1116,392 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
   );
 }
 
+// Custom Domains Manager Component
+interface CustomDomain {
+  id: string;
+  domain: string;
+  verification_status: 'pending' | 'verified' | 'failed';
+  verification_token: string;
+  is_primary: boolean;
+  ssl_status: 'pending' | 'issued' | 'failed' | 'expired';
+  verified_at: string | null;
+  created_at: string;
+}
+
+interface CustomDomainsManagerProps {
+  organizationId: string;
+}
+
+function CustomDomainsManager({ organizationId }: CustomDomainsManagerProps) {
+  const [domains, setDomains] = useState<CustomDomain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Load domains
+  const loadDomains = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('organization_domains')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDomains(data || []);
+    } catch (error) {
+      console.error('Error loading domains:', error);
+      toast.error('Failed to load custom domains');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDomains();
+  }, [organizationId]);
+
+  const handleVerifyDomain = async (domainId: string, domain: string) => {
+    try {
+      // Get user's session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Please log in again to verify domains');
+        return;
+      }
+
+      toast.info('Checking DNS records...');
+
+      const response = await fetch('/api/domains/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ domain, domainId, organizationId })
+      });
+
+      const result = await response.json();
+
+      if (result.verified) {
+        toast.success('Domain verified successfully!');
+        loadDomains();
+      } else {
+        toast.error(result.message || 'Domain verification failed');
+      }
+    } catch (error) {
+      console.error('Error verifying domain:', error);
+      toast.error('Failed to verify domain');
+    }
+  };
+
+  const handleDeleteDomain = async (domainId: string, domain: string) => {
+    if (!confirm(`Are you sure you want to delete ${domain}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('organization_domains')
+        .delete()
+        .eq('id', domainId);
+
+      if (error) throw error;
+
+      toast.success('Domain deleted successfully');
+      loadDomains();
+    } catch (error) {
+      console.error('Error deleting domain:', error);
+      toast.error('Failed to delete domain');
+    }
+  };
+
+  const handleSetPrimary = async (domainId: string) => {
+    try {
+      const { error } = await supabase
+        .from('organization_domains')
+        .update({ is_primary: true })
+        .eq('id', domainId);
+
+      if (error) throw error;
+
+      toast.success('Primary domain updated');
+      loadDomains();
+    } catch (error) {
+      console.error('Error setting primary domain:', error);
+      toast.error('Failed to set primary domain');
+    }
+  };
+
+  const handleGenerateSSL = async (domain: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Please log in again to generate SSL');
+        return;
+      }
+
+      toast.info('Generating SSL certificate... This may take a minute.');
+
+      const response = await fetch('/api/domains/ssl/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ domain, organizationId })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('SSL certificate generated successfully!');
+        loadDomains();
+      } else {
+        toast.error(result.error || result.message || 'SSL generation failed');
+      }
+    } catch (error) {
+      console.error('Error generating SSL:', error);
+      toast.error('Failed to generate SSL certificate');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Custom Domains</h3>
+        <p className="text-sm text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">Custom Domains</h3>
+          <p className="text-sm text-gray-500">Use your own domain name for your organization</p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)} data-testid="button-add-domain">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Domain
+        </Button>
+      </div>
+
+      {domains.length === 0 ? (
+        <div className="p-6 border border-dashed border-gray-300 rounded-lg text-center">
+          <p className="text-gray-500">No custom domains configured</p>
+          <p className="text-sm text-gray-400 mt-1">Add a custom domain to use your own URL</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {domains.map((domain) => (
+            <div key={domain.id} className="p-4 border rounded-lg space-y-3" data-testid={`domain-${domain.id}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">{domain.domain}</span>
+                  {domain.is_primary && (
+                    <Badge className="bg-blue-100 text-blue-800">Primary</Badge>
+                  )}
+                  <Badge className={
+                    domain.verification_status === 'verified' ? 'bg-green-100 text-green-800' :
+                    domain.verification_status === 'failed' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  } data-testid={`status-${domain.id}`}>
+                    {domain.verification_status === 'verified' && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                    {domain.verification_status === 'failed' && <X className="w-3 h-3 inline mr-1" />}
+                    {domain.verification_status === 'pending' && <Clock className="w-3 h-3 inline mr-1" />}
+                    {domain.verification_status}
+                  </Badge>
+                  <Badge className={
+                    domain.ssl_status === 'issued' ? 'bg-green-100 text-green-800' :
+                    domain.ssl_status === 'failed' ? 'bg-red-100 text-red-800' :
+                    domain.ssl_status === 'expired' ? 'bg-orange-100 text-orange-800' :
+                    'bg-gray-100 text-gray-800'
+                  }>
+                    SSL: {domain.ssl_status}
+                  </Badge>
+                </div>
+                <div className="flex gap-2">
+                  {domain.verification_status !== 'verified' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleVerifyDomain(domain.id, domain.domain)}
+                      data-testid={`button-verify-${domain.id}`}
+                    >
+                      Verify
+                    </Button>
+                  )}
+                  {domain.verification_status === 'verified' && domain.ssl_status !== 'issued' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleGenerateSSL(domain.domain)}
+                      data-testid={`button-ssl-${domain.id}`}
+                    >
+                      Generate SSL
+                    </Button>
+                  )}
+                  {!domain.is_primary && domain.verification_status === 'verified' && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleSetPrimary(domain.id)}
+                    >
+                      Set Primary
+                    </Button>
+                  )}
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleDeleteDomain(domain.id, domain.domain)}
+                    data-testid={`button-delete-${domain.id}`}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+
+              {domain.verification_status === 'pending' && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                  <p className="font-medium text-yellow-900">DNS Verification Required</p>
+                  <p className="text-yellow-700 mt-1">
+                    Add this TXT record to your DNS:
+                  </p>
+                  <code className="block mt-2 p-2 bg-white rounded">
+                    <strong>Name:</strong> _verification.{domain.domain}<br />
+                    <strong>Type:</strong> TXT<br />
+                    <strong>Value:</strong> {domain.verification_token}
+                  </code>
+                </div>
+              )}
+
+              {domain.verification_status === 'verified' && domain.ssl_status === 'pending' && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+                  <p className="text-blue-900">
+                    Domain verified! Click "Generate SSL" to create an SSL certificate for HTTPS.
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showAddModal && (
+        <AddDomainModal
+          organizationId={organizationId}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false);
+            loadDomains();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Add Domain Modal
+interface AddDomainModalProps {
+  organizationId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AddDomainModal({ organizationId, onClose, onSuccess }: AddDomainModalProps) {
+  const [domain, setDomain] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Validate domain format
+      const domainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/;
+      const canonicalDomain = domain.toLowerCase().trim();
+
+      if (!domainRegex.test(canonicalDomain)) {
+        toast.error('Invalid domain format');
+        setLoading(false);
+        return;
+      }
+
+      // Insert domain into database
+      const { error } = await supabase
+        .from('organization_domains')
+        .insert({
+          organization_id: organizationId,
+          domain: canonicalDomain,
+          verification_status: 'pending',
+          ssl_status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast.success('Domain added successfully! Please verify it by adding the DNS TXT record.');
+      onSuccess();
+    } catch (error) {
+      console.error('Error adding domain:', error);
+      toast.error('Failed to add domain');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Add Custom Domain</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Domain Name</label>
+            <Input
+              type="text"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              placeholder="example.com"
+              required
+              data-testid="input-domain"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Enter your domain name without http:// or www
+            </p>
+          </div>
+
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+            <h3 className="font-medium text-blue-900 mb-2">Setup Instructions</h3>
+            <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+              <li>Add your domain above and click "Add Domain"</li>
+              <li>You'll receive a verification token</li>
+              <li>Add a TXT record to your DNS with the verification token</li>
+              <li>Click "Verify" to confirm DNS setup</li>
+              <li>Once verified, click "Generate SSL" to enable HTTPS</li>
+            </ol>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading} data-testid="button-submit-domain">
+              {loading ? 'Adding...' : 'Add Domain'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // Settings Admin View Component
 interface SettingsAdminViewProps {
   organization: any;
@@ -1377,6 +1763,11 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
           <Button onClick={handleSave} disabled={saving} data-testid="button-save-settings">
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
+        </div>
+
+        {/* Custom Domains Section */}
+        <div className="pt-6 border-t mt-6">
+          <CustomDomainsManager organizationId={organization.id} />
         </div>
       </CardContent>
     </Card>
