@@ -31,6 +31,7 @@ import { EmailWorkflowsManager } from '@/components/admin/EmailWorkflowsManager'
 import { DynamicFormRenderer } from '@/components/forms/DynamicFormRenderer'
 import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns'
+import { exportToCSV } from '@/lib/csvExport'
 
 // Utility function for date formatting
 const formatDate = (dateString: string) => {
@@ -59,6 +60,7 @@ export function MemberDashboard() {
   const [loading, setLoading] = useState(true)
   const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges' | 'admin-reminders' | 'admin-reports'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
+  const [exportingMemberships, setExportingMemberships] = useState(false)
 
   useEffect(() => {
     // Check URL hash for navigation
@@ -146,6 +148,37 @@ export function MemberDashboard() {
     const diffTime = expiry.getTime() - now.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
+  }
+
+  const handleExportMemberships = () => {
+    try {
+      setExportingMemberships(true);
+      
+      if (memberships.length === 0) {
+        toast.error('No memberships to export');
+        return;
+      }
+
+      exportToCSV({
+        data: memberships,
+        columns: [
+          { key: 'membership_type', header: 'Type' },
+          { key: 'status', header: 'Status' },
+          { key: 'start_date', header: 'Start Date' },
+          { key: 'end_date', header: 'End Date' },
+          { key: 'amount_paid', header: 'Price' },
+          { key: 'payment_reference', header: 'Payment Reference' }
+        ],
+        filename: 'memberships'
+      });
+      
+      toast.success('Memberships exported successfully');
+    } catch (error) {
+      console.error('Error exporting memberships:', error);
+      toast.error('Failed to export memberships');
+    } finally {
+      setExportingMemberships(false);
+    }
   }
 
   if (loading) {
@@ -550,10 +583,27 @@ export function MemberDashboard() {
       {/* Membership History */}
       <Card>
         <CardHeader>
-          <CardTitle>Membership History</CardTitle>
-          <CardDescription>
-            View your past and current memberships
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Membership History</CardTitle>
+              <CardDescription>
+                View your past and current memberships
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleExportMemberships} 
+              disabled={exportingMemberships || memberships.length === 0}
+              data-testid="button-export-csv"
+            >
+              {exportingMemberships ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -988,6 +1038,7 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [showEditMember, setShowEditMember] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchMembers();
@@ -1087,6 +1138,38 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
     }
   };
 
+  const handleExportMembers = () => {
+    try {
+      setExporting(true);
+      const dataToExport = memberTab === 'active' ? members : pendingUsers;
+      
+      if (dataToExport.length === 0) {
+        toast.error('No members to export');
+        return;
+      }
+
+      exportToCSV({
+        data: dataToExport,
+        columns: [
+          { key: 'first_name', header: 'First Name' },
+          { key: 'last_name', header: 'Last Name' },
+          { key: 'email', header: 'Email' },
+          { key: 'phone', header: 'Phone' },
+          { key: 'status', header: 'Status' },
+          { key: 'created_at', header: 'Created At' }
+        ],
+        filename: `members_${memberTab}`
+      });
+      
+      toast.success('Members exported successfully');
+    } catch (error) {
+      console.error('Error exporting members:', error);
+      toast.error('Failed to export members');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading members...</div>;
   }
@@ -1099,10 +1182,25 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
             <CardTitle>Members Management</CardTitle>
             <CardDescription>Manage organization members and their access</CardDescription>
           </div>
-          <Button onClick={() => setShowAddMember(true)} data-testid="button-add-member">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Member
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleExportMembers} 
+              disabled={exporting}
+              data-testid="button-export-csv"
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export CSV
+            </Button>
+            <Button onClick={() => setShowAddMember(true)} data-testid="button-add-member">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Member
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -2601,6 +2699,7 @@ function EventsView({ organizationId, profileId, onBack }: EventsViewProps) {
   const [loading, setLoading] = useState(true);
   const [registeringEventId, setRegisteringEventId] = useState<string | null>(null);
   const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchEventsAndRegistrations();
@@ -2808,6 +2907,36 @@ function EventsView({ organizationId, profileId, onBack }: EventsViewProps) {
     return `${formattedStart} - ${formattedEnd}`;
   };
 
+  const handleExportEvents = () => {
+    try {
+      setExporting(true);
+      
+      if (events.length === 0) {
+        toast.error('No events to export');
+        return;
+      }
+
+      exportToCSV({
+        data: events,
+        columns: [
+          { key: 'title', header: 'Title' },
+          { key: 'start_date', header: 'Date' },
+          { key: 'location', header: 'Location' },
+          { key: 'max_attendees', header: 'Capacity' },
+          { key: 'current_attendees', header: 'Attendees' }
+        ],
+        filename: 'events'
+      });
+      
+      toast.success('Events exported successfully');
+    } catch (error) {
+      console.error('Error exporting events:', error);
+      toast.error('Failed to export events');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -2819,11 +2948,28 @@ function EventsView({ organizationId, profileId, onBack }: EventsViewProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Upcoming Events
-          </CardTitle>
-          <CardDescription>View and register for organization events</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Upcoming Events
+              </CardTitle>
+              <CardDescription>View and register for organization events</CardDescription>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleExportEvents} 
+              disabled={exporting || events.length === 0}
+              data-testid="button-export-csv"
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Export CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -3725,6 +3871,7 @@ function SubscribersView({ organizationId }: SubscribersViewProps) {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchSubscribers();
@@ -3769,6 +3916,34 @@ function SubscribersView({ organizationId }: SubscribersViewProps) {
     }
   };
 
+  const handleExportSubscribers = () => {
+    try {
+      setExporting(true);
+      
+      if (subscribers.length === 0) {
+        toast.error('No subscribers to export');
+        return;
+      }
+
+      exportToCSV({
+        data: subscribers,
+        columns: [
+          { key: 'email', header: 'Email' },
+          { key: 'status', header: 'Status' },
+          { key: 'subscribed_at', header: 'Subscribed At' }
+        ],
+        filename: 'subscribers'
+      });
+      
+      toast.success('Subscribers exported successfully');
+    } catch (error) {
+      console.error('Error exporting subscribers:', error);
+      toast.error('Failed to export subscribers');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -3784,9 +3959,24 @@ function SubscribersView({ organizationId }: SubscribersViewProps) {
         <div>
           <p className="text-sm text-gray-600">{subscribers.filter(s => s.status === 'subscribed').length} active subscribers</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)} data-testid="button-add-subscriber">
-          + Add Subscriber
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleExportSubscribers} 
+            disabled={exporting || subscribers.length === 0}
+            data-testid="button-export-csv"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Export CSV
+          </Button>
+          <Button onClick={() => setShowAddModal(true)} data-testid="button-add-subscriber">
+            + Add Subscriber
+          </Button>
+        </div>
       </div>
 
       {subscribers.length === 0 ? (
@@ -4251,6 +4441,7 @@ function AdminEventRegistrationsView({ organizationId }: AdminEventRegistrations
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedRegistrations, setSelectedRegistrations] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -4386,36 +4577,42 @@ function AdminEventRegistrationsView({ organizationId }: AdminEventRegistrations
     }
   };
 
-  const exportToCSV = () => {
-    if (filteredRegistrations.length === 0) {
-      toast.error('No registrations to export');
-      return;
+  const handleExportRegistrations = () => {
+    try {
+      setExporting(true);
+      
+      if (filteredRegistrations.length === 0) {
+        toast.error('No registrations to export');
+        return;
+      }
+
+      const exportData = filteredRegistrations.map(reg => ({
+        member_name: `${reg.profiles.first_name} ${reg.profiles.last_name}`,
+        email: reg.profiles.email,
+        status: reg.status,
+        registered_at: reg.registered_at,
+        checked_in_at: reg.checked_in_at
+      }));
+
+      exportToCSV({
+        data: exportData,
+        columns: [
+          { key: 'member_name', header: 'Member Name' },
+          { key: 'email', header: 'Email' },
+          { key: 'status', header: 'Status' },
+          { key: 'registered_at', header: 'Registered At' },
+          { key: 'checked_in_at', header: 'Checked In At' }
+        ],
+        filename: `${selectedEvent?.title || 'event'}-registrations`
+      });
+
+      toast.success('Registrations exported successfully');
+    } catch (error) {
+      console.error('Error exporting registrations:', error);
+      toast.error('Failed to export registrations');
+    } finally {
+      setExporting(false);
     }
-
-    const headers = ['Name', 'Email', 'Status', 'Registered Date', 'Checked In Date'];
-    const rows = filteredRegistrations.map(reg => [
-      `${reg.profiles.first_name} ${reg.profiles.last_name}`,
-      reg.profiles.email,
-      reg.status,
-      formatDate(reg.registered_at),
-      reg.checked_in_at ? formatDate(reg.checked_in_at) : 'N/A'
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${selectedEvent?.title || 'event'}-registrations-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('CSV exported successfully');
   };
 
   const filteredRegistrations = registrations.filter(reg => {
@@ -4639,11 +4836,15 @@ function AdminEventRegistrationsView({ organizationId }: AdminEventRegistrations
                   </select>
                   <Button
                     variant="outline"
-                    onClick={exportToCSV}
-                    disabled={filteredRegistrations.length === 0}
+                    onClick={handleExportRegistrations}
+                    disabled={exporting || filteredRegistrations.length === 0}
                     data-testid="button-export-csv"
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    {exporting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
                     Export CSV
                   </Button>
                   {selectedRegistrations.size > 0 && (
@@ -4963,6 +5164,7 @@ function AdminCommitteesView({ organizationId }: AdminCommitteesViewProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [selectedCommittee, setSelectedCommittee] = useState<Committee | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const fetchCommittees = async () => {
     try {
@@ -5026,6 +5228,34 @@ function AdminCommitteesView({ organizationId }: AdminCommitteesViewProps) {
     }
   };
 
+  const handleExportCommittees = () => {
+    try {
+      setExporting(true);
+      
+      if (committees.length === 0) {
+        toast.error('No committees to export');
+        return;
+      }
+
+      exportToCSV({
+        data: committees,
+        columns: [
+          { key: 'name', header: 'Name' },
+          { key: 'member_count', header: 'Member Count' },
+          { key: 'is_active', header: 'Is Active', format: (val) => val ? 'Yes' : 'No' }
+        ],
+        filename: 'committees'
+      });
+      
+      toast.success('Committees exported successfully');
+    } catch (error) {
+      console.error('Error exporting committees:', error);
+      toast.error('Failed to export committees');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6" data-testid="loading-admin-committees">
@@ -5048,10 +5278,25 @@ function AdminCommitteesView({ organizationId }: AdminCommitteesViewProps) {
           <h2 className="text-2xl font-bold text-gray-900">Committees Management</h2>
           <p className="text-gray-600 mt-1">Manage organization committees and their members</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-committee">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Committee
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleExportCommittees} 
+            disabled={exporting || committees.length === 0}
+            data-testid="button-export-csv"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Export CSV
+          </Button>
+          <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-committee">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Committee
+          </Button>
+        </div>
       </div>
 
       {committees.length === 0 ? (
