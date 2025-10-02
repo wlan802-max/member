@@ -178,6 +178,39 @@ export function SignupFormEnhanced({
         return;
       }
 
+      // Create membership records for each selected membership type
+      const { data: yearData, error: yearError } = await supabase
+        .rpc('get_current_membership_year', { org_id: organizationId });
+
+      if (yearError) {
+        console.error('Error getting membership year:', yearError);
+        toast.error('Account created but membership year could not be determined.');
+        return;
+      }
+
+      // RPC returns integer directly
+      const membershipYear = typeof yearData === 'number' ? yearData : new Date().getFullYear();
+
+      // Create membership records for each selected type
+      const membershipRecords = selectedMemberships.map(typeId => ({
+        profile_id: profileId,
+        organization_id: organizationId,
+        membership_type_id: typeId,
+        membership_year: membershipYear,
+        status: 'pending',
+        amount_paid: 0.00
+      }));
+
+      const { error: membershipError } = await supabase
+        .from('memberships')
+        .insert(membershipRecords);
+
+      if (membershipError) {
+        console.error('Error creating membership records:', membershipError);
+        toast.error('Account created but membership records could not be created. Please contact an administrator.');
+        return;
+      }
+
       toast.success('Account created successfully! Awaiting admin approval.');
       
       setTimeout(() => {
