@@ -1,0 +1,60 @@
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+index-1ftT3Muy.js:64 useAuth: Starting auth check
+index-1ftT3Muy.js:64 Loading organization...
+index-1ftT3Muy.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Production mode, is admin: false
+index-1ftT3Muy.js:64 Getting current organization...
+index-1ftT3Muy.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Production mode, is admin: false
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+index-1ftT3Muy.js:64 Getting organization for subdomain: frps
+index-1ftT3Muy.js:64 useAuth: getCurrentUser resolved with user: null
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+index-1ftT3Muy.js:64 useAuth: Auth state changed, user: null
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+your-project.supabase.co/rest/v1/organizations?select=*&slug=eq.frps&is_active=eq.true:1  Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+index-1ftT3Muy.js:64 Organization not found: Object
+index-1ftT3Muy.js:64 Current organization result: null
+index-1ftT3Muy.js:64 No organization selected - will show selector
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+index-1ftT3Muy.js:64 useAuth: Starting auth check
+index-1ftT3Muy.js:64 Loading organization...
+index-1ftT3Muy.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Production mode, is admin: false
+index-1ftT3Muy.js:64 Getting current organization...
+index-1ftT3Muy.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Production mode, is admin: false
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+index-1ftT3Muy.js:64 Getting organization for subdomain: frps
+index-1ftT3Muy.js:64 useAuth: getCurrentUser resolved with user: null
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+index-1ftT3Muy.js:64 useAuth: Auth state changed, user: null
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+your-project.supabase.co/rest/v1/organizations?select=*&slug=eq.frps&is_active=eq.true:1  Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+index-1ftT3Muy.js:64 Organization not found: Object
+index-1ftT3Muy.js:64 Current organization result: null
+index-1ftT3Muy.js:64 No organization selected - will show selector
+index-1ftT3Muy.js:64 Current hostname: frps.member.ringing.org.uk
+index-1ftT3Muy.js:64 Hostname parts: Array(5)
+index-1ftT3Muy.js:64 Production mode, detected subdomain: frps
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable
