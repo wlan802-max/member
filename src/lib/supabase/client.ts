@@ -276,6 +276,73 @@ export type Database = {
           updated_at?: string
         }
       }
+      mailing_lists: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          slug: string
+          is_active: boolean
+          subscriber_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          description?: string | null
+          slug: string
+          is_active?: boolean
+          subscriber_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          description?: string | null
+          slug?: string
+          is_active?: boolean
+          subscriber_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      subscriber_lists: {
+        Row: {
+          id: string
+          subscriber_id: string
+          mailing_list_id: string
+          status: 'subscribed' | 'unsubscribed' | 'pending'
+          subscribed_at: string
+          unsubscribed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          subscriber_id: string
+          mailing_list_id: string
+          status?: 'subscribed' | 'unsubscribed' | 'pending'
+          subscribed_at?: string
+          unsubscribed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          subscriber_id?: string
+          mailing_list_id?: string
+          status?: 'subscribed' | 'unsubscribed' | 'pending'
+          subscribed_at?: string
+          unsubscribed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       email_campaigns: {
         Row: {
           id: string
@@ -284,6 +351,7 @@ export type Database = {
           subject: string
           content: string
           status: string
+          mailing_list_id: string | null
           resend_broadcast_id: string | null
           scheduled_at: string | null
           sent_at: string | null
@@ -299,6 +367,7 @@ export type Database = {
           subject: string
           content: string
           status?: string
+          mailing_list_id?: string | null
           resend_broadcast_id?: string | null
           scheduled_at?: string | null
           sent_at?: string | null
@@ -314,6 +383,7 @@ export type Database = {
           subject?: string
           content?: string
           status?: string
+          mailing_list_id?: string | null
           resend_broadcast_id?: string | null
           scheduled_at?: string | null
           sent_at?: string | null

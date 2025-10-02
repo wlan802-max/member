@@ -6,15 +6,17 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTenant } from '@/hooks/useTenant'
 import { SignupFormEnhanced } from './SignupFormEnhanced'
 import { Mail, Lock, AlertCircle } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 
 export function LoginForm() {
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resetSuccess, setResetSuccess] = useState(false)
 
   const { signIn, signUp } = useAuth()
   const { organization, loading: tenantLoading } = useTenant()
@@ -23,11 +25,23 @@ export function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setResetSuccess(false)
 
     if (mode === 'login') {
       const { error } = await signIn(email, password)
       if (error) {
         setError(error.message)
+      }
+    } else if (mode === 'reset') {
+      // Password reset mode
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setResetSuccess(true)
       }
     } else {
       // Sign up mode
@@ -131,12 +145,32 @@ export function LoginForm() {
             {organization?.name}
           </CardTitle>
           <CardDescription>
-            {mode === 'login' ? 'Sign in to your member account' : 'Create a new account'}
+            {mode === 'login' ? 'Sign in to your member account' : mode === 'reset' ? 'Reset your password' : 'Create a new account'}
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === 'reset' && resetSuccess ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800">
+                  <strong>Check your email!</strong> We've sent you a password reset link. Click the link in the email to set a new password.
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  setMode('login')
+                  setResetSuccess(false)
+                  setEmail('')
+                }}
+                className="w-full"
+                variant="outline"
+              >
+                Back to Login
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="flex items-center space-x-2 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
@@ -193,72 +227,112 @@ export function LoginForm() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                />
+            {mode !== 'reset' && (
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             <Button
               type="submit"
               className="w-full"
               disabled={loading}
               style={{ backgroundColor: organization?.primary_color }}
+              data-testid={mode === 'reset' ? 'button-send-reset-link' : mode === 'login' ? 'button-sign-in' : 'button-sign-up'}
             >
               {loading 
-                ? (mode === 'login' ? 'Signing in...' : 'Creating account...') 
-                : (mode === 'login' ? 'Sign In' : 'Sign Up')
+                ? (mode === 'login' ? 'Signing in...' : mode === 'reset' ? 'Sending...' : 'Creating account...') 
+                : (mode === 'login' ? 'Sign In' : mode === 'reset' ? 'Send Reset Link' : 'Sign Up')
               }
             </Button>
           </form>
+          )}
 
-          <div className="mt-6">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                {mode === 'login' ? (
-                  <>
-                    Don't have an account?{' '}
-                    <button
-                      onClick={() => {
-                        setMode('signup')
-                        setError(null)
-                      }}
-                      className="font-medium hover:underline"
-                      style={{ color: organization?.primary_color }}
-                    >
-                      Sign up
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button
-                      onClick={() => {
-                        setMode('login')
-                        setError(null)
-                      }}
-                      className="font-medium hover:underline"
-                      style={{ color: organization?.primary_color }}
-                    >
-                      Sign in
-                    </button>
-                  </>
-                )}
-              </p>
+          {mode === 'login' && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => {
+                  setMode('reset')
+                  setError(null)
+                }}
+                className="text-sm hover:underline"
+                style={{ color: organization?.primary_color }}
+                data-testid="link-forgot-password"
+              >
+                Forgot password?
+              </button>
             </div>
-          </div>
+          )}
+
+          {mode !== 'reset' && (
+            <div className="mt-6">
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  {mode === 'login' ? (
+                    <>
+                      Don't have an account?{' '}
+                      <button
+                        onClick={() => {
+                          setMode('signup')
+                          setError(null)
+                        }}
+                        className="font-medium hover:underline"
+                        style={{ color: organization?.primary_color }}
+                        data-testid="link-sign-up"
+                      >
+                        Sign up
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        onClick={() => {
+                          setMode('login')
+                          setError(null)
+                        }}
+                        className="font-medium hover:underline"
+                        style={{ color: organization?.primary_color }}
+                        data-testid="link-sign-in"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {mode === 'reset' && !resetSuccess && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => {
+                  setMode('login')
+                  setError(null)
+                }}
+                className="text-sm hover:underline"
+                style={{ color: organization?.primary_color }}
+                data-testid="link-back-to-login"
+              >
+                Back to login
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

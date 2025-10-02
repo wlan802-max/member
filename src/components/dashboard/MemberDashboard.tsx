@@ -52,7 +52,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
@@ -183,6 +183,17 @@ export function MemberDashboard() {
               data-testid="tab-dashboard"
             >
               Dashboard
+            </button>
+            <button
+              onClick={() => setActiveView('subscriptions')}
+              className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'subscriptions'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-subscriptions"
+            >
+              Mailing Lists
             </button>
             {isAdmin && (
               <>
@@ -505,6 +516,11 @@ export function MemberDashboard() {
       {/* Messages View */}
       {activeView === 'messages' && organization && (
         <MessagesView organizationId={organization.id} onBack={() => setActiveView('dashboard')} />
+      )}
+
+      {/* Subscriptions View - For all members */}
+      {activeView === 'subscriptions' && organization && user?.email && (
+        <SubscriptionsView organizationId={organization.id} userEmail={user.email} />
       )}
 
       {/* Admin - Members View */}
@@ -1523,6 +1539,8 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [availableForms, setAvailableForms] = useState<Array<{id: string, title: string, form_type: string}>>([]);
   const [loadingForms, setLoadingForms] = useState(true);
+  const [logoUrl, setLogoUrl] = useState<string | null>(organization.logo_url || null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -1554,6 +1572,63 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
 
     loadForms();
   }, [organization.id]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${organization.id}-${Date.now()}.${fileExt}`;
+      
+      // Upload to Supabase Storage (using public bucket)
+      const { error: uploadError } = await supabase.storage
+        .from('organization-logos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('organization-logos')
+        .getPublicUrl(fileName);
+
+      // Update organization logo_url
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({ logo_url: publicUrl })
+        .eq('id', organization.id);
+
+      if (updateError) throw updateError;
+
+      setLogoUrl(publicUrl);
+      toast.success('Logo uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading logo:', error);
+      if (error.message?.includes('Bucket not found')) {
+        toast.error('Storage not configured. Logo upload is not available yet.');
+      } else {
+        toast.error('Failed to upload logo');
+      }
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -1654,6 +1729,38 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
                 data-testid="input-secondary-color"
               />
               <span className="text-sm text-gray-600">{formData.secondary_color}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-6 border-t">
+          <h3 className="text-lg font-semibold mb-4">Organization Logo</h3>
+          <div className="space-y-4">
+            {logoUrl && (
+              <div className="flex items-center gap-4">
+                <img 
+                  src={logoUrl} 
+                  alt="Organization logo" 
+                  className="h-20 w-20 object-contain rounded border"
+                />
+                <div className="text-sm text-gray-600">
+                  Current logo
+                </div>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium">Upload New Logo</label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploadingLogo}
+                className="mt-1"
+                data-testid="input-logo-upload"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {uploadingLogo ? 'Uploading...' : 'PNG, JPG or GIF (max 2MB)'}
+              </p>
             </div>
           </div>
         </div>
@@ -2583,24 +2690,263 @@ function MessagesView({ organizationId, onBack }: MessagesViewProps) {
   );
 }
 
+// Subscriptions View Component - For members to manage their mailing list subscriptions
+interface SubscriptionsViewProps {
+  organizationId: string;
+  userEmail: string;
+}
+
+interface MailingListWithSubscription {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  is_active: boolean;
+  subscriber_count: number;
+  subscriber_id: string | null;
+  subscription_status: 'subscribed' | 'unsubscribed' | 'pending' | null;
+}
+
+function SubscriptionsView({ organizationId, userEmail }: SubscriptionsViewProps) {
+  const [lists, setLists] = useState<MailingListWithSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [subscriberId, setSubscriberId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchSubscriberId();
+  }, [userEmail, organizationId]);
+
+  useEffect(() => {
+    if (subscriberId) {
+      fetchListsWithSubscriptions();
+    }
+  }, [subscriberId, organizationId]);
+
+  const fetchSubscriberId = async () => {
+    try {
+      // Get or create subscriber record for this user
+      const { data: existingSubscriber } = await supabase
+        .from('subscribers')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('email', userEmail)
+        .single();
+
+      if (existingSubscriber) {
+        setSubscriberId(existingSubscriber.id);
+      } else {
+        // Create subscriber if doesn't exist
+        const { data: newSubscriber, error } = await supabase
+          .from('subscribers')
+          .insert({
+            organization_id: organizationId,
+            email: userEmail,
+            status: 'subscribed'
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        setSubscriberId(newSubscriber.id);
+      }
+    } catch (error) {
+      console.error('Error fetching subscriber:', error);
+      toast.error('Failed to load subscriber information');
+    }
+  };
+
+  const fetchListsWithSubscriptions = async () => {
+    try {
+      // Fetch all active mailing lists
+      const { data: mailingLists, error: listsError } = await supabase
+        .from('mailing_lists')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (listsError) throw listsError;
+
+      // Fetch user's subscriptions
+      const { data: subscriptions, error: subsError } = await supabase
+        .from('subscriber_lists')
+        .select('mailing_list_id, status')
+        .eq('subscriber_id', subscriberId);
+
+      if (subsError) throw subsError;
+
+      // Merge the data
+      const listsWithSubs = (mailingLists || []).map(list => {
+        const subscription = subscriptions?.find(s => s.mailing_list_id === list.id);
+        return {
+          ...list,
+          subscriber_id: subscriberId,
+          subscription_status: subscription?.status || null
+        };
+      });
+
+      setLists(listsWithSubs);
+    } catch (error) {
+      console.error('Error fetching lists:', error);
+      toast.error('Failed to load mailing lists');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSubscription = async (listId: string, currentStatus: string | null) => {
+    if (!subscriberId) return;
+
+    try {
+      if (currentStatus === 'subscribed') {
+        // Unsubscribe
+        const { error } = await supabase
+          .from('subscriber_lists')
+          .update({ 
+            status: 'unsubscribed',
+            unsubscribed_at: new Date().toISOString()
+          })
+          .eq('subscriber_id', subscriberId)
+          .eq('mailing_list_id', listId);
+
+        if (error) throw error;
+        toast.success('Unsubscribed from list');
+      } else if (currentStatus === 'unsubscribed' || currentStatus === null) {
+        // Resubscribe or subscribe for first time
+        if (currentStatus === 'unsubscribed') {
+          const { error } = await supabase
+            .from('subscriber_lists')
+            .update({ 
+              status: 'subscribed',
+              subscribed_at: new Date().toISOString(),
+              unsubscribed_at: null
+            })
+            .eq('subscriber_id', subscriberId)
+            .eq('mailing_list_id', listId);
+
+          if (error) throw error;
+        } else {
+          // First time subscription
+          const { error } = await supabase
+            .from('subscriber_lists')
+            .insert({
+              subscriber_id: subscriberId,
+              mailing_list_id: listId,
+              status: 'subscribed'
+            });
+
+          if (error) throw error;
+        }
+        toast.success('Subscribed to list');
+      }
+
+      fetchListsWithSubscriptions();
+    } catch (error) {
+      console.error('Error toggling subscription:', error);
+      toast.error('Failed to update subscription');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-600 mt-4">Loading mailing lists...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Mailing List Subscriptions</h2>
+        <p className="text-gray-600 mt-1">
+          Manage your email subscriptions and choose which lists you'd like to receive updates from
+        </p>
+      </div>
+
+      {lists.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium mb-2">No Mailing Lists Available</h3>
+            <p className="text-gray-600">
+              There are currently no mailing lists available for subscription.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {lists.map((list) => (
+            <Card key={list.id} data-testid={`subscription-card-${list.id}`}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center gap-2">
+                      {list.name}
+                      {list.subscription_status === 'subscribed' && (
+                        <Badge variant="default">Subscribed</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>{list.description || 'No description available'}</CardDescription>
+                  </div>
+                  <Button
+                    variant={list.subscription_status === 'subscribed' ? 'outline' : 'default'}
+                    onClick={() => toggleSubscription(list.id, list.subscription_status)}
+                    data-testid={`button-toggle-subscription-${list.id}`}
+                  >
+                    {list.subscription_status === 'subscribed' ? 'Unsubscribe' : 'Subscribe'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-gray-600">
+                  <p>{list.subscriber_count} subscribers</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> You can subscribe or unsubscribe from any list at any time. Your preferences will be saved automatically.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // Mailing Admin View Component
 interface MailingAdminViewProps {
   organizationId: string;
 }
 
 function MailingAdminView({ organizationId }: MailingAdminViewProps) {
-  const [tab, setTab] = useState<'subscribers' | 'campaigns'>('subscribers');
+  const [tab, setTab] = useState<'lists' | 'subscribers' | 'campaigns'>('lists');
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Mailing List Management</h2>
-        <p className="text-gray-600 mt-1">Manage subscribers and email campaigns</p>
+        <p className="text-gray-600 mt-1">Manage mailing lists, subscribers and email campaigns</p>
       </div>
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="flex gap-4">
+          <button
+            onClick={() => setTab('lists')}
+            className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+              tab === 'lists'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+            data-testid="tab-lists"
+          >
+            Mailing Lists
+          </button>
           <button
             onClick={() => setTab('subscribers')}
             className={`pb-3 px-1 border-b-2 font-medium text-sm ${
@@ -2626,8 +2972,332 @@ function MailingAdminView({ organizationId }: MailingAdminViewProps) {
         </nav>
       </div>
 
+      {tab === 'lists' && <MailingListsView organizationId={organizationId} />}
       {tab === 'subscribers' && <SubscribersView organizationId={organizationId} />}
       {tab === 'campaigns' && <CampaignsView organizationId={organizationId} />}
+    </div>
+  );
+}
+
+// Mailing Lists View Component
+interface MailingListsViewProps {
+  organizationId: string;
+}
+
+interface MailingList {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  is_active: boolean;
+  subscriber_count: number;
+  created_at: string;
+}
+
+function MailingListsView({ organizationId }: MailingListsViewProps) {
+  const [lists, setLists] = useState<MailingList[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingList, setEditingList] = useState<MailingList | null>(null);
+
+  useEffect(() => {
+    fetchLists();
+  }, [organizationId]);
+
+  const fetchLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('mailing_lists')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setLists(data || []);
+    } catch (error) {
+      console.error('Error fetching mailing lists:', error);
+      toast.error('Failed to load mailing lists');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteList = async (listId: string) => {
+    if (!confirm('Are you sure you want to delete this mailing list? All subscriber associations will be removed.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('mailing_lists')
+        .delete()
+        .eq('id', listId);
+
+      if (error) throw error;
+      toast.success('Mailing list deleted');
+      fetchLists();
+    } catch (error) {
+      console.error('Error deleting list:', error);
+      toast.error('Failed to delete mailing list');
+    }
+  };
+
+  const toggleActive = async (listId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('mailing_lists')
+        .update({ is_active: !currentStatus })
+        .eq('id', listId);
+
+      if (error) throw error;
+      toast.success(`Mailing list ${!currentStatus ? 'activated' : 'deactivated'}`);
+      fetchLists();
+    } catch (error) {
+      console.error('Error updating list:', error);
+      toast.error('Failed to update mailing list');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-600 mt-4">Loading mailing lists...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-600">{lists.length} mailing lists</p>
+        <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-list">
+          + Create List
+        </Button>
+      </div>
+
+      {lists.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium mb-2">No Mailing Lists Yet</h3>
+            <p className="text-gray-600 mb-4">
+              Create mailing lists to organize your subscribers into different groups.
+            </p>
+            <Button onClick={() => setShowCreateModal(true)}>Create First List</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {lists.map((list) => (
+            <Card key={list.id} data-testid={`list-card-${list.id}`}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      {list.name}
+                      {!list.is_active && <Badge variant="secondary">Inactive</Badge>}
+                    </CardTitle>
+                    <CardDescription>{list.description || 'No description'}</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleActive(list.id, list.is_active)}
+                      data-testid={`button-toggle-${list.id}`}
+                    >
+                      {list.is_active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingList(list)}
+                      data-testid={`button-edit-${list.id}`}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteList(list.id)}
+                      data-testid={`button-delete-${list.id}`}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Slug:</span> {list.slug}
+                  </div>
+                  <div>
+                    <span className="font-medium">Subscribers:</span> {list.subscriber_count}
+                  </div>
+                  <div>
+                    <span className="font-medium">Created:</span> {new Date(list.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create/Edit Modal */}
+      {(showCreateModal || editingList) && (
+        <CreateEditListModal
+          organizationId={organizationId}
+          list={editingList}
+          onClose={() => {
+            setShowCreateModal(false);
+            setEditingList(null);
+          }}
+          onSuccess={() => {
+            fetchLists();
+            setShowCreateModal(false);
+            setEditingList(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Create/Edit List Modal Component
+interface CreateEditListModalProps {
+  organizationId: string;
+  list: MailingList | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CreateEditListModal({ organizationId, list, onClose, onSuccess }: CreateEditListModalProps) {
+  const [formData, setFormData] = useState({
+    name: list?.name || '',
+    description: list?.description || '',
+    slug: list?.slug || '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const slug = formData.slug || generateSlug(formData.name);
+      
+      if (list) {
+        // Update existing list
+        const { error } = await supabase
+          .from('mailing_lists')
+          .update({
+            name: formData.name,
+            description: formData.description,
+            slug: slug,
+          })
+          .eq('id', list.id);
+
+        if (error) throw error;
+        toast.success('Mailing list updated');
+      } else {
+        // Create new list
+        const { error } = await supabase
+          .from('mailing_lists')
+          .insert({
+            organization_id: organizationId,
+            name: formData.name,
+            description: formData.description,
+            slug: slug,
+          });
+
+        if (error) throw error;
+        toast.success('Mailing list created');
+      }
+
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error saving list:', error);
+      if (error.code === '23505') {
+        toast.error('A list with this slug already exists');
+      } else {
+        toast.error('Failed to save mailing list');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>{list ? 'Edit Mailing List' : 'Create Mailing List'}</CardTitle>
+          <CardDescription>
+            {list ? 'Update the mailing list details' : 'Create a new mailing list for your organization'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name *</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (!list && !formData.slug) {
+                    setFormData({ ...formData, name: e.target.value, slug: generateSlug(e.target.value) });
+                  }
+                }}
+                placeholder="e.g., Monthly Newsletter"
+                required
+                data-testid="input-list-name"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Slug *</label>
+              <Input
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase() })}
+                placeholder="e.g., monthly-newsletter"
+                required
+                pattern="[a-z0-9-]+"
+                data-testid="input-list-slug"
+              />
+              <p className="text-xs text-gray-500 mt-1">Used in URLs (lowercase, numbers, hyphens only)</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional description"
+                data-testid="input-list-description"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting} data-testid="button-save-list">
+                {submitting ? 'Saving...' : list ? 'Update' : 'Create'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
