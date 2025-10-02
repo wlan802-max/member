@@ -597,7 +597,7 @@ main() {
     log "- Application: $APP_DIR"
     log "- Environment: $APP_DIR/.env"
     log "- Nginx config: /etc/nginx/sites-available/$APP_NAME"
-    log "- PM2 config: $APP_DIR/ecosystem.config.js"
+    log "- PM2 config: $APP_DIR/ecosystem.config.cjs"
     log "- Logs: /var/log/$APP_NAME/"
     log ""
     log "Useful commands:"
