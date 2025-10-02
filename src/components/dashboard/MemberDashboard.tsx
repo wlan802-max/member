@@ -20,12 +20,16 @@ import {
   Download,
   Plus,
   X,
-  Loader2
+  Loader2,
+  Users,
+  UserPlus
 } from 'lucide-react'
 import { FormBuilder } from '@/components/admin/FormBuilder'
 import { MembershipTypesEditor } from '@/components/admin/MembershipTypesEditor'
 import { EmailWorkflowsManager } from '@/components/admin/EmailWorkflowsManager'
 import { DynamicFormRenderer } from '@/components/forms/DynamicFormRenderer'
+import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
+import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns'
 
 // Utility function for date formatting
 const formatDate = (dateString: string) => {
@@ -52,7 +56,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
@@ -295,6 +299,17 @@ export function MemberDashboard() {
                   data-testid="tab-admin-committees"
                 >
                   Committees Management
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-analytics')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-analytics'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-analytics"
+                >
+                  Analytics
                 </button>
               </>
             )}
@@ -599,6 +614,11 @@ export function MemberDashboard() {
       {/* Admin - Committees Management View */}
       {activeView === 'admin-committees' && isAdmin && organization && (
         <AdminCommitteesView organizationId={organization.id} />
+      )}
+
+      {/* Admin - Analytics View */}
+      {activeView === 'admin-analytics' && isAdmin && organization && (
+        <AnalyticsView organizationId={organization.id} primaryColor={organization.primary_color} />
       )}
 
       {/* Renewal Modal */}
@@ -5663,6 +5683,400 @@ function CommitteeMembersModal({ committee, organizationId, onClose, onSuccess }
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// Analytics View Component
+interface AnalyticsViewProps {
+  organizationId: string;
+  primaryColor?: string;
+}
+
+function AnalyticsView({ organizationId, primaryColor = '#3B82F6' }: AnalyticsViewProps) {
+  const [loading, setLoading] = useState(true);
+  const [statsData, setStatsData] = useState({
+    totalMembers: 0,
+    activeMemberships: 0,
+    upcomingEvents: 0,
+    recentRegistrations: 0
+  });
+  const [membershipTrends, setMembershipTrends] = useState<any[]>([]);
+  const [membershipByType, setMembershipByType] = useState<any[]>([]);
+  const [eventAttendance, setEventAttendance] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (organizationId) {
+      fetchAnalyticsData();
+    }
+  }, [organizationId]);
+
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const [
+        { count: totalMembers },
+        { count: activeMemberships },
+        { data: upcomingEventsData },
+        { data: recentRegistrationsData },
+        { data: allMemberships },
+        { data: membershipTypes },
+        { data: eventsData },
+        { data: recentProfiles }
+      ] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .eq('is_active', true),
+        
+        supabase
+          .from('memberships')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+          .eq('status', 'active'),
+        
+        supabase
+          .from('events')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .eq('is_published', true)
+          .gte('start_date', new Date().toISOString())
+          .order('start_date', { ascending: true }),
+        
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .gte('created_at', thirtyDaysAgo.toISOString()),
+        
+        supabase
+          .from('memberships')
+          .select('*')
+          .eq('organization_id', organizationId),
+        
+        supabase
+          .from('organization_membership_types')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .eq('is_active', true),
+        
+        supabase
+          .from('events')
+          .select('*, event_registrations(count)')
+          .eq('organization_id', organizationId)
+          .eq('is_published', true)
+          .gte('start_date', new Date().toISOString())
+          .order('start_date', { ascending: true })
+          .limit(10),
+        
+        supabase
+          .from('profiles')
+          .select('*, memberships(membership_type)')
+          .eq('organization_id', organizationId)
+          .order('created_at', { ascending: false })
+          .limit(10)
+      ]);
+
+      setStatsData({
+        totalMembers: totalMembers || 0,
+        activeMemberships: activeMemberships || 0,
+        upcomingEvents: upcomingEventsData?.length || 0,
+        recentRegistrations: recentRegistrationsData?.length || 0
+      });
+
+      const last12Months = Array.from({ length: 12 }, (_, i) => {
+        const date = subMonths(new Date(), 11 - i);
+        return {
+          month: format(date, 'MMM yyyy'),
+          startDate: startOfMonth(date),
+          endDate: endOfMonth(date)
+        };
+      });
+
+      const trendsData = last12Months.map(({ month, startDate, endDate }) => {
+        const membershipsInMonth = allMemberships?.filter(m => {
+          const createdDate = new Date(m.created_at);
+          return isWithinInterval(createdDate, { start: startDate, end: endDate });
+        }) || [];
+
+        return {
+          month,
+          active: membershipsInMonth.filter(m => m.status === 'active').length,
+          expired: membershipsInMonth.filter(m => m.status === 'expired').length,
+          pending: membershipsInMonth.filter(m => m.status === 'pending').length
+        };
+      });
+      setMembershipTrends(trendsData);
+
+      const typeDistribution = membershipTypes?.map(type => {
+        const count = allMemberships?.filter(m => m.membership_type_id === type.id).length || 0;
+        return {
+          name: type.name,
+          value: count,
+          price: parseFloat(type.price)
+        };
+      }).filter(item => item.value > 0) || [];
+      setMembershipByType(typeDistribution);
+
+      const eventStats = eventsData?.map(event => ({
+        name: event.title.length > 20 ? event.title.substring(0, 20) + '...' : event.title,
+        registrations: event.event_registrations?.[0]?.count || 0,
+        capacity: event.max_attendees || 0,
+        date: format(new Date(event.start_date), 'MMM dd')
+      })) || [];
+      setEventAttendance(eventStats);
+
+      const activityData = recentProfiles?.map(profile => ({
+        id: profile.id,
+        name: `${profile.first_name} ${profile.last_name}`,
+        email: profile.email,
+        membershipType: profile.memberships?.[0]?.membership_type || 'N/A',
+        date: format(new Date(profile.created_at), 'MMM dd, yyyy')
+      })) || [];
+      setRecentActivity(activityData);
+
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+      toast.error('Failed to load analytics data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const CHART_COLORS = [primaryColor, '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse" />
+          ))}
+        </div>
+        <div className="h-96 bg-gray-200 rounded-lg animate-pulse" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6" data-testid="analytics-dashboard">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
+          <p className="text-gray-600 mt-1">View comprehensive insights and metrics</p>
+        </div>
+      </div>
+
+      {/* Overview Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card data-testid="stat-total-members">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Members</p>
+                <p className="text-3xl font-bold mt-2" data-testid="stat-total-members-value">{statsData.totalMembers}</p>
+              </div>
+              <div className="p-3 rounded-full" style={{ backgroundColor: `${primaryColor}20` }}>
+                <Users className="h-6 w-6" style={{ color: primaryColor }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="stat-active-memberships">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Active Memberships</p>
+                <p className="text-3xl font-bold mt-2" data-testid="stat-active-memberships-value">{statsData.activeMemberships}</p>
+              </div>
+              <div className="p-3 rounded-full bg-green-100">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="stat-upcoming-events">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Upcoming Events</p>
+                <p className="text-3xl font-bold mt-2" data-testid="stat-upcoming-events-value">{statsData.upcomingEvents}</p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-100">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="stat-recent-registrations">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">New Members (30d)</p>
+                <p className="text-3xl font-bold mt-2" data-testid="stat-recent-registrations-value">{statsData.recentRegistrations}</p>
+              </div>
+              <div className="p-3 rounded-full bg-purple-100">
+                <UserPlus className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Membership Trends Chart */}
+      <Card data-testid="chart-membership-trends">
+        <CardHeader>
+          <CardTitle>Membership Trends</CardTitle>
+          <CardDescription>Last 12 months membership status overview</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={membershipTrends}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="active" 
+                stroke="#10B981" 
+                strokeWidth={2}
+                name="Active"
+                data-testid="line-active"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="expired" 
+                stroke="#EF4444" 
+                strokeWidth={2}
+                name="Expired"
+                data-testid="line-expired"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="pending" 
+                stroke="#F59E0B" 
+                strokeWidth={2}
+                name="Pending"
+                data-testid="line-pending"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Charts Row - Pie Chart and Bar Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Membership by Type Pie Chart */}
+        <Card data-testid="chart-membership-by-type">
+          <CardHeader>
+            <CardTitle>Membership Distribution</CardTitle>
+            <CardDescription>By membership type</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {membershipByType.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={membershipByType}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill={primaryColor}
+                    dataKey="value"
+                  >
+                    {membershipByType.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                No membership data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Event Attendance Bar Chart */}
+        <Card data-testid="chart-event-attendance">
+          <CardHeader>
+            <CardTitle>Event Registrations</CardTitle>
+            <CardDescription>Upcoming events attendance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {eventAttendance.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={eventAttendance}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="registrations" fill={primaryColor} name="Registered" />
+                  <Bar dataKey="capacity" fill="#E5E7EB" name="Capacity" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                No upcoming events
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity Table */}
+      <Card data-testid="table-recent-activity">
+        <CardHeader>
+          <CardTitle>Recent Member Signups</CardTitle>
+          <CardDescription>Latest member registrations</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentActivity.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Name</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Email</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Membership Type</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Joined Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentActivity.map((activity, index) => (
+                    <tr key={activity.id} className="border-b hover:bg-gray-50" data-testid={`activity-row-${index}`}>
+                      <td className="py-3 px-4" data-testid={`activity-name-${index}`}>{activity.name}</td>
+                      <td className="py-3 px-4" data-testid={`activity-email-${index}`}>{activity.email}</td>
+                      <td className="py-3 px-4" data-testid={`activity-type-${index}`}>{activity.membershipType}</td>
+                      <td className="py-3 px-4" data-testid={`activity-date-${index}`}>{activity.date}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              No recent activity
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
