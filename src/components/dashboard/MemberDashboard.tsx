@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/hooks/useAuth'
 import { useTenant } from '@/hooks/useTenant'
 import { supabase } from '@/lib/supabase/client'
@@ -56,7 +57,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges' | 'admin-reminders'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
@@ -332,6 +333,17 @@ export function MemberDashboard() {
                   data-testid="tab-admin-badges"
                 >
                   Badges Management
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-reminders')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-reminders'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-reminders"
+                >
+                  Automated Reminders
                 </button>
               </>
             )}
@@ -651,6 +663,11 @@ export function MemberDashboard() {
       {/* Admin - Badges Management View */}
       {activeView === 'admin-badges' && isAdmin && organization && (
         <AdminBadgesView organizationId={organization.id} />
+      )}
+
+      {/* Admin - Automated Reminders View */}
+      {activeView === 'admin-reminders' && isAdmin && organization && (
+        <AdminRemindersView organizationId={organization.id} />
       )}
 
       {/* Renewal Modal */}
@@ -7060,6 +7077,695 @@ function AnalyticsView({ organizationId, primaryColor = '#3B82F6' }: AnalyticsVi
               No recent activity
             </div>
           )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Admin Reminders View Component
+interface AdminRemindersViewProps {
+  organizationId: string;
+}
+
+function AdminRemindersView({ organizationId }: AdminRemindersViewProps) {
+  const [reminders, setReminders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [selectedReminder, setSelectedReminder] = useState<any>(null);
+  const [stats, setStats] = useState({
+    totalActive: 0,
+    sentLast30Days: 0,
+    successRate: 0,
+    failedCount: 0
+  });
+
+  useEffect(() => {
+    fetchReminders();
+    fetchStats();
+  }, [organizationId]);
+
+  const fetchReminders = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('automated_reminders')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setReminders(data || []);
+    } catch (error) {
+      console.error('Error fetching reminders:', error);
+      toast.error('Failed to load reminders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const [remindersResult, logsResult] = await Promise.all([
+        supabase
+          .from('automated_reminders')
+          .select('is_active')
+          .eq('organization_id', organizationId),
+        supabase
+          .from('reminder_logs')
+          .select('status, reminder_id')
+          .gte('created_at', thirtyDaysAgo.toISOString())
+          .in('reminder_id', 
+            (await supabase
+              .from('automated_reminders')
+              .select('id')
+              .eq('organization_id', organizationId))
+              .data?.map(r => r.id) || []
+          )
+      ]);
+
+      const totalActive = remindersResult.data?.filter(r => r.is_active).length || 0;
+      const logs = logsResult.data || [];
+      const sentLast30Days = logs.length;
+      const successCount = logs.filter(l => l.status === 'sent').length;
+      const failedCount = logs.filter(l => l.status === 'failed').length;
+      const successRate = sentLast30Days > 0 ? (successCount / sentLast30Days) * 100 : 0;
+
+      setStats({
+        totalActive,
+        sentLast30Days,
+        successRate,
+        failedCount
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const handleToggleActive = async (reminderId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('automated_reminders')
+        .update({ is_active: !currentStatus })
+        .eq('id', reminderId);
+
+      if (error) throw error;
+
+      toast.success(`Reminder ${!currentStatus ? 'activated' : 'deactivated'}`);
+      fetchReminders();
+      fetchStats();
+    } catch (error) {
+      console.error('Error toggling reminder:', error);
+      toast.error('Failed to update reminder status');
+    }
+  };
+
+  const handleDelete = async (reminderId: string) => {
+    if (!confirm('Are you sure you want to delete this reminder?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('automated_reminders')
+        .delete()
+        .eq('id', reminderId);
+
+      if (error) throw error;
+
+      toast.success('Reminder deleted successfully');
+      fetchReminders();
+      fetchStats();
+    } catch (error) {
+      console.error('Error deleting reminder:', error);
+      toast.error('Failed to delete reminder');
+    }
+  };
+
+  const getReminderTypeBadge = (type: string) => {
+    const config: Record<string, { color: string; label: string }> = {
+      membership_renewal: { color: 'bg-blue-100 text-blue-800', label: 'Membership Renewal' },
+      membership_expiry: { color: 'bg-red-100 text-red-800', label: 'Membership Expiry' },
+      event_upcoming: { color: 'bg-green-100 text-green-800', label: 'Event Upcoming' },
+      event_followup: { color: 'bg-purple-100 text-purple-800', label: 'Event Follow-up' },
+      custom: { color: 'bg-gray-100 text-gray-800', label: 'Custom' }
+    };
+
+    const { color, label } = config[type] || config.custom;
+    return <Badge className={color} data-testid={`badge-type-${type}`}>{label}</Badge>;
+  };
+
+  const getTriggerDaysText = (days: number) => {
+    if (days === 0) return 'On the day';
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} after`;
+    return `${Math.abs(days)} day${Math.abs(days) > 1 ? 's' : ''} before`;
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} data-testid={`skeleton-stat-${i}`}>
+              <CardContent className="p-6">
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2 animate-pulse"></div>
+                <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card data-testid="card-total-active">
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Total Active Reminders</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2" data-testid="stat-total-active">{stats.totalActive}</p>
+          </CardContent>
+        </Card>
+        <Card data-testid="card-sent-30days">
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Sent (Last 30 Days)</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2" data-testid="stat-sent-30days">{stats.sentLast30Days}</p>
+          </CardContent>
+        </Card>
+        <Card data-testid="card-success-rate">
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Success Rate</p>
+            <p className="text-3xl font-bold text-green-600 mt-2" data-testid="stat-success-rate">
+              {stats.successRate.toFixed(1)}%
+            </p>
+          </CardContent>
+        </Card>
+        <Card data-testid="card-failed-count">
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Failed Reminders</p>
+            <p className="text-3xl font-bold text-red-600 mt-2" data-testid="stat-failed-count">{stats.failedCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Header with Add Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900" data-testid="heading-reminders">Automated Reminders</h2>
+          <p className="text-gray-600 mt-1">Manage automated email reminders for your members</p>
+        </div>
+        <Button
+          onClick={() => setShowCreateModal(true)}
+          data-testid="button-create-reminder"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create Reminder
+        </Button>
+      </div>
+
+      {/* Reminders List */}
+      {reminders.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center text-gray-500">
+            <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p>No reminders configured yet. Click "Create Reminder" to get started.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {reminders.map((reminder) => (
+            <Card key={reminder.id} data-testid={`reminder-card-${reminder.id}`}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold" data-testid={`reminder-name-${reminder.id}`}>
+                        {reminder.name}
+                      </h3>
+                      {getReminderTypeBadge(reminder.reminder_type)}
+                      <Badge 
+                        variant={reminder.is_active ? 'default' : 'secondary'}
+                        data-testid={`reminder-status-${reminder.id}`}
+                      >
+                        {reminder.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    {reminder.description && (
+                      <p className="text-gray-600 text-sm mb-3" data-testid={`reminder-description-${reminder.id}`}>
+                        {reminder.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span data-testid={`reminder-trigger-${reminder.id}`}>
+                        <Clock className="h-4 w-4 inline mr-1" />
+                        {getTriggerDaysText(reminder.trigger_days)}
+                      </span>
+                      <span data-testid={`reminder-subject-${reminder.id}`}>
+                        <Mail className="h-4 w-4 inline mr-1" />
+                        {reminder.email_subject}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <label className="flex items-center cursor-pointer" data-testid={`toggle-active-${reminder.id}`}>
+                      <input
+                        type="checkbox"
+                        checked={reminder.is_active}
+                        onChange={() => handleToggleActive(reminder.id, reminder.is_active)}
+                        className="sr-only peer"
+                      />
+                      <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedReminder(reminder);
+                        setShowLogsModal(true);
+                      }}
+                      data-testid={`button-view-logs-${reminder.id}`}
+                    >
+                      View Logs
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedReminder(reminder);
+                        setShowEditModal(true);
+                      }}
+                      data-testid={`button-edit-${reminder.id}`}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(reminder.id)}
+                      data-testid={`button-delete-${reminder.id}`}
+                    >
+                      <X className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create Reminder Modal */}
+      {showCreateModal && (
+        <ReminderFormModal
+          organizationId={organizationId}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchReminders();
+            fetchStats();
+          }}
+        />
+      )}
+
+      {/* Edit Reminder Modal */}
+      {showEditModal && selectedReminder && (
+        <ReminderFormModal
+          organizationId={organizationId}
+          reminder={selectedReminder}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedReminder(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedReminder(null);
+            fetchReminders();
+            fetchStats();
+          }}
+        />
+      )}
+
+      {/* View Logs Modal */}
+      {showLogsModal && selectedReminder && (
+        <ReminderLogsModal
+          reminderId={selectedReminder.id}
+          reminderName={selectedReminder.name}
+          onClose={() => {
+            setShowLogsModal(false);
+            setSelectedReminder(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Reminder Form Modal Component
+interface ReminderFormModalProps {
+  organizationId: string;
+  reminder?: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function ReminderFormModal({ organizationId, reminder, onClose, onSuccess }: ReminderFormModalProps) {
+  const [formData, setFormData] = useState({
+    name: reminder?.name || '',
+    description: reminder?.description || '',
+    reminder_type: reminder?.reminder_type || 'membership_renewal',
+    trigger_days: reminder?.trigger_days || 0,
+    email_subject: reminder?.email_subject || '',
+    email_body: reminder?.email_body || '',
+    target_audience: reminder?.target_audience ? JSON.stringify(reminder.target_audience, null, 2) : '{}',
+    is_active: reminder?.is_active ?? true
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      let targetAudience = null;
+      try {
+        targetAudience = JSON.parse(formData.target_audience);
+      } catch {
+        toast.error('Invalid JSON in target audience field');
+        setSaving(false);
+        return;
+      }
+
+      const data = {
+        organization_id: organizationId,
+        name: formData.name,
+        description: formData.description || null,
+        reminder_type: formData.reminder_type,
+        trigger_days: parseInt(formData.trigger_days.toString()),
+        email_subject: formData.email_subject,
+        email_body: formData.email_body,
+        target_audience: targetAudience,
+        is_active: formData.is_active
+      };
+
+      if (reminder) {
+        const { error } = await supabase
+          .from('automated_reminders')
+          .update(data)
+          .eq('id', reminder.id);
+
+        if (error) throw error;
+        toast.success('Reminder updated successfully');
+      } else {
+        const { error } = await supabase
+          .from('automated_reminders')
+          .insert(data);
+
+        if (error) throw error;
+        toast.success('Reminder created successfully');
+      }
+
+      onSuccess();
+    } catch (error) {
+      console.error('Error saving reminder:', error);
+      toast.error('Failed to save reminder');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <CardHeader>
+          <CardTitle data-testid="modal-title-reminder">
+            {reminder ? 'Edit' : 'Create'} Reminder
+          </CardTitle>
+          <CardDescription>
+            Configure automated email reminders for your members
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="text-sm font-medium" data-testid="label-name">Name</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                data-testid="input-name"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium" data-testid="label-description">Description</label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                data-testid="input-description"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium" data-testid="label-type">Reminder Type</label>
+              <select
+                value={formData.reminder_type}
+                onChange={(e) => setFormData({ ...formData, reminder_type: e.target.value })}
+                className="w-full mt-1 rounded-md border border-gray-300 px-3 py-2"
+                data-testid="select-type"
+              >
+                <option value="membership_renewal">Membership Renewal</option>
+                <option value="membership_expiry">Membership Expiry</option>
+                <option value="event_upcoming">Event Upcoming</option>
+                <option value="event_followup">Event Follow-up</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium" data-testid="label-trigger-days">
+                Trigger Days (negative for "before", positive for "after")
+              </label>
+              <Input
+                type="number"
+                value={formData.trigger_days}
+                onChange={(e) => setFormData({ ...formData, trigger_days: parseInt(e.target.value) || 0 })}
+                required
+                data-testid="input-trigger-days"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Example: -7 = 7 days before, 3 = 3 days after
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium" data-testid="label-subject">Email Subject (max 500 chars)</label>
+              <Input
+                value={formData.email_subject}
+                onChange={(e) => setFormData({ ...formData, email_subject: e.target.value.slice(0, 500) })}
+                required
+                maxLength={500}
+                data-testid="input-subject"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium" data-testid="label-body">Email Body</label>
+              <Textarea
+                value={formData.email_body}
+                onChange={(e) => setFormData({ ...formData, email_body: e.target.value })}
+                rows={8}
+                required
+                data-testid="textarea-body"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Template variables: &#123;&#123;first_name&#125;&#125;, &#123;&#123;last_name&#125;&#125;, &#123;&#123;organization_name&#125;&#125;, &#123;&#123;expiry_date&#125;&#125;
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium" data-testid="label-target-audience">
+                Target Audience (JSON, optional filters)
+              </label>
+              <Textarea
+                value={formData.target_audience}
+                onChange={(e) => setFormData({ ...formData, target_audience: e.target.value })}
+                rows={4}
+                data-testid="textarea-target-audience"
+                placeholder='{"membership_type": "individual", "status": "active"}'
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="h-4 w-4"
+                data-testid="checkbox-active"
+              />
+              <label htmlFor="is_active" className="text-sm font-medium">Active</label>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving} data-testid="button-save">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {reminder ? 'Update' : 'Create'} Reminder
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Reminder Logs Modal Component
+interface ReminderLogsModalProps {
+  reminderId: string;
+  reminderName: string;
+  onClose: () => void;
+}
+
+function ReminderLogsModal({ reminderId, reminderName, onClose }: ReminderLogsModalProps) {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const logsPerPage = 50;
+
+  useEffect(() => {
+    fetchLogs();
+  }, [reminderId, statusFilter]);
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      let query = supabase
+        .from('reminder_logs')
+        .select(`
+          *,
+          profiles:profile_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('reminder_id', reminderId)
+        .order('sent_at', { ascending: false })
+        .limit(logsPerPage);
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      toast.error('Failed to load reminder logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const config: Record<string, { color: string; label: string }> = {
+      sent: { color: 'bg-green-100 text-green-800', label: 'Sent' },
+      failed: { color: 'bg-red-100 text-red-800', label: 'Failed' },
+      bounced: { color: 'bg-orange-100 text-orange-800', label: 'Bounced' },
+      opened: { color: 'bg-blue-100 text-blue-800', label: 'Opened' },
+      clicked: { color: 'bg-purple-100 text-purple-800', label: 'Clicked' }
+    };
+
+    const { color, label } = config[status] || { color: 'bg-gray-100 text-gray-800', label: status };
+    return <Badge className={color}>{label}</Badge>;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <Card className="w-full max-w-5xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <CardHeader>
+          <CardTitle data-testid="modal-title-logs">Reminder Logs: {reminderName}</CardTitle>
+          <CardDescription>Last 50 reminder logs</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4">
+            <label className="text-sm font-medium mr-2">Filter by status:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-md border border-gray-300 px-3 py-1"
+              data-testid="select-status-filter"
+            >
+              <option value="all">All</option>
+              <option value="sent">Sent</option>
+              <option value="failed">Failed</option>
+              <option value="bounced">Bounced</option>
+              <option value="opened">Opened</option>
+              <option value="clicked">Clicked</option>
+            </select>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No logs found for this reminder
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full" data-testid="table-logs">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Member</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Email</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Sent Date/Time</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log, index) => (
+                    <tr key={log.id} className="border-b hover:bg-gray-50" data-testid={`log-row-${index}`}>
+                      <td className="py-3 px-4" data-testid={`log-member-${index}`}>
+                        {log.profiles?.first_name} {log.profiles?.last_name}
+                      </td>
+                      <td className="py-3 px-4" data-testid={`log-email-${index}`}>
+                        {log.profiles?.email}
+                      </td>
+                      <td className="py-3 px-4" data-testid={`log-date-${index}`}>
+                        {format(new Date(log.sent_at), 'PPp')}
+                      </td>
+                      <td className="py-3 px-4" data-testid={`log-status-${index}`}>
+                        {getStatusBadge(log.status)}
+                      </td>
+                      <td className="py-3 px-4 text-red-600 text-sm" data-testid={`log-error-${index}`}>
+                        {log.error_message || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="flex justify-end mt-4">
+            <Button onClick={onClose} data-testid="button-close-logs">
+              Close
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
