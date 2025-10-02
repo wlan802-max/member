@@ -56,7 +56,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
@@ -210,6 +210,17 @@ export function MemberDashboard() {
             >
               Committees
             </button>
+            <button
+              onClick={() => setActiveView('badges')}
+              className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'badges'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-badges"
+            >
+              Badges
+            </button>
             {isAdmin && (
               <>
                 <button
@@ -310,6 +321,17 @@ export function MemberDashboard() {
                   data-testid="tab-analytics"
                 >
                   Analytics
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-badges')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-badges'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-admin-badges"
+                >
+                  Badges Management
                 </button>
               </>
             )}
@@ -619,6 +641,16 @@ export function MemberDashboard() {
       {/* Admin - Analytics View */}
       {activeView === 'admin-analytics' && isAdmin && organization && (
         <AnalyticsView organizationId={organization.id} primaryColor={organization.primary_color} />
+      )}
+
+      {/* Member - Badges View */}
+      {activeView === 'badges' && organization && user?.profile?.id && (
+        <MemberBadgesView organizationId={organization.id} profileId={user.profile.id} />
+      )}
+
+      {/* Admin - Badges Management View */}
+      {activeView === 'admin-badges' && isAdmin && organization && (
+        <AdminBadgesView organizationId={organization.id} />
       )}
 
       {/* Renewal Modal */}
@@ -5683,6 +5715,959 @@ function CommitteeMembersModal({ committee, organizationId, onClose, onSuccess }
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// Member Badges View Component
+interface MemberBadgesViewProps {
+  organizationId: string;
+  profileId: string;
+}
+
+function MemberBadgesView({ organizationId, profileId }: MemberBadgesViewProps) {
+  const [loading, setLoading] = useState(true);
+  const [myBadges, setMyBadges] = useState<any[]>([]);
+  const [allBadges, setAllBadges] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchBadges();
+  }, [organizationId, profileId]);
+
+  const fetchBadges = async () => {
+    try {
+      setLoading(true);
+
+      const [{ data: allBadgesData }, { data: myBadgesData }] = await Promise.all([
+        supabase
+          .from('badges')
+          .select('*, member_badges(count)')
+          .eq('organization_id', organizationId)
+          .eq('is_active', true)
+          .order('display_order'),
+        supabase
+          .from('member_badges')
+          .select('*, badges(*)')
+          .eq('profile_id', profileId)
+      ]);
+
+      setAllBadges(allBadgesData || []);
+      setMyBadges(myBadgesData || []);
+    } catch (error) {
+      console.error('Error fetching badges:', error);
+      toast.error('Failed to load badges');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hasBadge = (badgeId: string) => {
+    return myBadges.some(mb => mb.badge_id === badgeId);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8" data-testid="view-member-badges">
+      <div>
+        <h2 className="text-2xl font-bold mb-1">My Badges</h2>
+        <p className="text-gray-600">View your earned achievements and available badges</p>
+      </div>
+
+      {/* My Badges Section */}
+      <div>
+        <h3 className="text-xl font-semibold mb-4">Badges I've Earned</h3>
+        {myBadges.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {myBadges.map(memberBadge => (
+              <Card key={memberBadge.id} className="hover:shadow-md transition-shadow" data-testid={`card-my-badge-${memberBadge.id}`}>
+                <CardHeader>
+                  <div className="flex items-start gap-3">
+                    <div 
+                      className="text-3xl p-2 rounded-lg"
+                      style={{ backgroundColor: memberBadge.badges.color || '#e5e7eb' }}
+                    >
+                      {memberBadge.badges.icon || '🏆'}
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-lg" data-testid={`text-badge-name-${memberBadge.id}`}>
+                        {memberBadge.badges.name}
+                      </CardTitle>
+                      <CardDescription data-testid={`text-badge-description-${memberBadge.id}`}>
+                        {memberBadge.badges.description}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Awarded:</span>
+                      <span className="font-medium" data-testid={`text-awarded-date-${memberBadge.id}`}>
+                        {formatDate(memberBadge.awarded_at)}
+                      </span>
+                    </div>
+                    {memberBadge.notes && (
+                      <div className="text-sm">
+                        <span className="text-gray-600">Notes:</span>
+                        <p className="mt-1 text-gray-700" data-testid={`text-badge-notes-${memberBadge.id}`}>
+                          {memberBadge.notes}
+                        </p>
+                      </div>
+                    )}
+                    {memberBadge.metadata && Object.keys(memberBadge.metadata).length > 0 && (
+                      <div className="text-sm">
+                        <span className="text-gray-600">Details:</span>
+                        <div className="mt-1 space-y-1" data-testid={`text-badge-metadata-${memberBadge.id}`}>
+                          {Object.entries(memberBadge.metadata).map(([key, value]) => (
+                            <div key={key} className="flex justify-between">
+                              <span className="text-gray-600">{key}:</span>
+                              <span className="font-medium">{String(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-gray-500">You haven't earned any badges yet</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Available Badges Section */}
+      <div>
+        <h3 className="text-xl font-semibold mb-4">Available Badges</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {allBadges.map(badge => {
+            const earned = hasBadge(badge.id);
+            const memberCount = Array.isArray(badge.member_badges) ? badge.member_badges.length : 0;
+            
+            return (
+              <Card 
+                key={badge.id} 
+                className={`transition-all ${earned ? 'ring-2 ring-green-500' : 'opacity-75'}`}
+                data-testid={`card-available-badge-${badge.id}`}
+              >
+                <CardHeader>
+                  <div className="flex items-start gap-3">
+                    <div 
+                      className="text-3xl p-2 rounded-lg relative"
+                      style={{ backgroundColor: badge.color || '#e5e7eb' }}
+                    >
+                      {badge.icon || '🏆'}
+                      {earned && (
+                        <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-1">
+                          <CheckCircle className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg" data-testid={`text-available-badge-name-${badge.id}`}>
+                          {badge.name}
+                        </CardTitle>
+                        {earned && (
+                          <Badge variant="default" className="bg-green-500">Earned</Badge>
+                        )}
+                      </div>
+                      <CardDescription data-testid={`text-available-badge-description-${badge.id}`}>
+                        {badge.description}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Type:</span>
+                      <Badge variant="outline" data-testid={`badge-type-${badge.id}`}>
+                        {badge.badge_type}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Members with badge:</span>
+                      <span className="font-medium" data-testid={`text-member-count-${badge.id}`}>
+                        {memberCount}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Admin Badges View Component
+interface AdminBadgesViewProps {
+  organizationId: string;
+}
+
+function AdminBadgesView({ organizationId }: AdminBadgesViewProps) {
+  const [loading, setLoading] = useState(true);
+  const [badges, setBadges] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAwardModal, setShowAwardModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<any>(null);
+
+  useEffect(() => {
+    fetchBadges();
+  }, [organizationId]);
+
+  const fetchBadges = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('badges')
+        .select('*, member_badges(count)')
+        .eq('organization_id', organizationId)
+        .order('display_order');
+
+      if (error) throw error;
+      setBadges(data || []);
+    } catch (error) {
+      console.error('Error fetching badges:', error);
+      toast.error('Failed to load badges');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (badgeId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('badges')
+        .update({ is_active: !currentStatus })
+        .eq('id', badgeId);
+
+      if (error) throw error;
+      toast.success(`Badge ${currentStatus ? 'deactivated' : 'activated'}`);
+      fetchBadges();
+    } catch (error) {
+      console.error('Error toggling badge status:', error);
+      toast.error('Failed to update badge status');
+    }
+  };
+
+  const handleDelete = async (badgeId: string, badgeName: string) => {
+    if (!confirm(`Are you sure you want to delete "${badgeName}"? This will remove all member badges.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('badges')
+        .delete()
+        .eq('id', badgeId);
+
+      if (error) throw error;
+      toast.success('Badge deleted successfully');
+      fetchBadges();
+    } catch (error) {
+      console.error('Error deleting badge:', error);
+      toast.error('Failed to delete badge');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6" data-testid="view-admin-badges">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold mb-1">Badges Management</h2>
+          <p className="text-gray-600">Create and manage member badges and achievements</p>
+        </div>
+        <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-badge">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Badge
+        </Button>
+      </div>
+
+      {/* Badges List */}
+      <div className="space-y-3">
+        {badges.map(badge => {
+          const memberCount = Array.isArray(badge.member_badges) ? badge.member_badges.length : 0;
+          
+          return (
+            <Card key={badge.id} data-testid={`card-badge-${badge.id}`}>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="text-3xl p-3 rounded-lg"
+                    style={{ backgroundColor: badge.color || '#e5e7eb' }}
+                  >
+                    {badge.icon || '🏆'}
+                  </div>
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-lg" data-testid={`text-badge-name-${badge.id}`}>
+                        {badge.name}
+                      </h3>
+                      <Badge variant="outline" data-testid={`badge-type-${badge.id}`}>
+                        {badge.badge_type}
+                      </Badge>
+                      {badge.is_active ? (
+                        <Badge variant="default" data-testid={`badge-status-${badge.id}`}>Active</Badge>
+                      ) : (
+                        <Badge variant="secondary" data-testid={`badge-status-${badge.id}`}>Inactive</Badge>
+                      )}
+                    </div>
+                    <p className="text-gray-600 text-sm mb-2" data-testid={`text-badge-description-${badge.id}`}>
+                      {badge.description}
+                    </p>
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span data-testid={`text-member-count-${badge.id}`}>
+                        <Users className="h-4 w-4 inline mr-1" />
+                        {memberCount} members
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedBadge(badge);
+                        setShowAwardModal(true);
+                      }}
+                      data-testid={`button-award-badge-${badge.id}`}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Award
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedBadge(badge);
+                        setShowMembersModal(true);
+                      }}
+                      data-testid={`button-view-members-${badge.id}`}
+                    >
+                      View Members
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedBadge(badge);
+                        setShowEditModal(true);
+                      }}
+                      data-testid={`button-edit-badge-${badge.id}`}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleToggleActive(badge.id, badge.is_active)}
+                      data-testid={`button-toggle-active-${badge.id}`}
+                    >
+                      {badge.is_active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDelete(badge.id, badge.name)}
+                      data-testid={`button-delete-badge-${badge.id}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {badges.length === 0 && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-gray-500 mb-4">No badges created yet</p>
+              <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-first-badge">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Badge
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showCreateModal && (
+        <CreateEditBadgeModal
+          organizationId={organizationId}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchBadges();
+          }}
+        />
+      )}
+
+      {showEditModal && selectedBadge && (
+        <CreateEditBadgeModal
+          organizationId={organizationId}
+          badge={selectedBadge}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedBadge(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedBadge(null);
+            fetchBadges();
+          }}
+        />
+      )}
+
+      {showAwardModal && selectedBadge && (
+        <AwardBadgeModal
+          organizationId={organizationId}
+          badge={selectedBadge}
+          onClose={() => {
+            setShowAwardModal(false);
+            setSelectedBadge(null);
+          }}
+          onSuccess={() => {
+            setShowAwardModal(false);
+            setSelectedBadge(null);
+            fetchBadges();
+          }}
+        />
+      )}
+
+      {showMembersModal && selectedBadge && (
+        <ViewBadgeMembersModal
+          badge={selectedBadge}
+          onClose={() => {
+            setShowMembersModal(false);
+            setSelectedBadge(null);
+          }}
+          onSuccess={() => {
+            fetchBadges();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Create/Edit Badge Modal
+interface CreateEditBadgeModalProps {
+  organizationId: string;
+  badge?: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CreateEditBadgeModal({ organizationId, badge, onClose, onSuccess }: CreateEditBadgeModalProps) {
+  const [formData, setFormData] = useState({
+    name: badge?.name || '',
+    description: badge?.description || '',
+    icon: badge?.icon || '🏆',
+    color: badge?.color || '#3B82F6',
+    badge_type: badge?.badge_type || 'manual',
+    criteria: badge?.criteria ? JSON.stringify(badge.criteria, null, 2) : '',
+    is_active: badge?.is_active ?? true
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      let criteria = null;
+      if (formData.criteria.trim()) {
+        try {
+          criteria = JSON.parse(formData.criteria);
+        } catch (e) {
+          toast.error('Invalid JSON in criteria field');
+          setLoading(false);
+          return;
+        }
+      }
+
+      const badgeData = {
+        organization_id: organizationId,
+        name: formData.name,
+        description: formData.description,
+        icon: formData.icon,
+        color: formData.color,
+        badge_type: formData.badge_type,
+        criteria,
+        is_active: formData.is_active,
+        display_order: badge?.display_order || 0
+      };
+
+      if (badge) {
+        const { error } = await supabase
+          .from('badges')
+          .update(badgeData)
+          .eq('id', badge.id);
+
+        if (error) throw error;
+        toast.success('Badge updated successfully');
+      } else {
+        const { error } = await supabase
+          .from('badges')
+          .insert(badgeData);
+
+        if (error) throw error;
+        toast.success('Badge created successfully');
+      }
+
+      onSuccess();
+    } catch (error) {
+      console.error('Error saving badge:', error);
+      toast.error('Failed to save badge');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="modal-create-edit-badge">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <CardTitle>{badge ? 'Edit Badge' : 'Create New Badge'}</CardTitle>
+          <CardDescription>
+            {badge ? 'Update badge details' : 'Create a new achievement badge for members'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Name *</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Founding Member"
+                required
+                data-testid="input-badge-name"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Description *</label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description of the badge"
+                required
+                data-testid="input-badge-description"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Icon (Emoji or Icon Name)</label>
+                <Input
+                  value={formData.icon}
+                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                  placeholder="🏆 or Award"
+                  data-testid="input-badge-icon"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Color (Hex or Color Name)</label>
+                <Input
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  placeholder="#3B82F6 or blue"
+                  data-testid="input-badge-color"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Badge Type *</label>
+              <select
+                value={formData.badge_type}
+                onChange={(e) => setFormData({ ...formData, badge_type: e.target.value })}
+                className="w-full p-2 border rounded"
+                data-testid="select-badge-type"
+              >
+                <option value="manual">Manual - Awarded by admins</option>
+                <option value="automatic">Automatic - Based on criteria</option>
+                <option value="milestone">Milestone - Achievement based</option>
+              </select>
+            </div>
+
+            {formData.badge_type === 'automatic' && (
+              <div>
+                <label className="text-sm font-medium">Criteria (JSON)</label>
+                <textarea
+                  value={formData.criteria}
+                  onChange={(e) => setFormData({ ...formData, criteria: e.target.value })}
+                  placeholder='{"years_member": 5, "events_attended": 10}'
+                  className="w-full p-2 border rounded font-mono text-sm"
+                  rows={4}
+                  data-testid="input-badge-criteria"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                data-testid="checkbox-badge-active"
+              />
+              <label htmlFor="is_active" className="text-sm font-medium">Active</label>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading} data-testid="button-cancel-badge">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} data-testid="button-save-badge">
+                {loading ? 'Saving...' : badge ? 'Update Badge' : 'Create Badge'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Award Badge Modal
+interface AwardBadgeModalProps {
+  organizationId: string;
+  badge: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AwardBadgeModal({ organizationId, badge, onClose, onSuccess }: AwardBadgeModalProps) {
+  const [members, setMembers] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [notes, setNotes] = useState('');
+  const [metadata, setMetadata] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [awarding, setAwarding] = useState(false);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [organizationId]);
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('first_name');
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      toast.error('Failed to load members');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredMembers = members.filter(member =>
+    `${member.first_name} ${member.last_name} ${member.email}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+  );
+
+  const handleAward = async () => {
+    if (!selectedMember) {
+      toast.error('Please select a member');
+      return;
+    }
+
+    setAwarding(true);
+
+    try {
+      let parsedMetadata = null;
+      if (metadata.trim()) {
+        try {
+          parsedMetadata = JSON.parse(metadata);
+        } catch (e) {
+          toast.error('Invalid JSON in metadata field');
+          setAwarding(false);
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from('member_badges')
+        .insert({
+          badge_id: badge.id,
+          profile_id: selectedMember.id,
+          awarded_at: new Date().toISOString(),
+          notes: notes || null,
+          metadata: parsedMetadata
+        });
+
+      if (error) throw error;
+      toast.success(`Badge awarded to ${selectedMember.first_name} ${selectedMember.last_name}`);
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error awarding badge:', error);
+      if (error.code === '23505') {
+        toast.error('This member already has this badge');
+      } else {
+        toast.error('Failed to award badge');
+      }
+    } finally {
+      setAwarding(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="modal-award-badge">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <CardTitle>Award Badge: {badge.name}</CardTitle>
+          <CardDescription>Select a member to award this badge to</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Search Members</label>
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by name or email..."
+              data-testid="input-search-members"
+            />
+          </div>
+
+          <div className="border rounded max-h-64 overflow-y-auto">
+            {loading ? (
+              <div className="p-4 text-center">Loading members...</div>
+            ) : filteredMembers.length > 0 ? (
+              <div className="divide-y">
+                {filteredMembers.map(member => (
+                  <div
+                    key={member.id}
+                    className={`p-3 cursor-pointer hover:bg-gray-50 ${
+                      selectedMember?.id === member.id ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => setSelectedMember(member)}
+                    data-testid={`member-option-${member.id}`}
+                  >
+                    <div className="font-medium">
+                      {member.first_name} {member.last_name}
+                    </div>
+                    <div className="text-sm text-gray-600">{member.email}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-gray-500">No members found</div>
+            )}
+          </div>
+
+          {selectedMember && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+              <div className="font-medium">Selected:</div>
+              <div>{selectedMember.first_name} {selectedMember.last_name}</div>
+              <div className="text-sm text-gray-600">{selectedMember.email}</div>
+            </div>
+          )}
+
+          <div>
+            <label className="text-sm font-medium">Notes (Optional)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional notes about this award..."
+              className="w-full p-2 border rounded"
+              rows={3}
+              data-testid="input-award-notes"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Metadata (Optional JSON)</label>
+            <textarea
+              value={metadata}
+              onChange={(e) => setMetadata(e.target.value)}
+              placeholder='{"certification_number": "12345", "date": "2025-10-02"}'
+              className="w-full p-2 border rounded font-mono text-sm"
+              rows={3}
+              data-testid="input-award-metadata"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} disabled={awarding} data-testid="button-cancel-award">
+              Cancel
+            </Button>
+            <Button onClick={handleAward} disabled={awarding || !selectedMember} data-testid="button-submit-award">
+              {awarding ? 'Awarding...' : 'Award Badge'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// View Badge Members Modal
+interface ViewBadgeMembersModalProps {
+  badge: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function ViewBadgeMembersModal({ badge, onClose, onSuccess }: ViewBadgeMembersModalProps) {
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBadgeMembers();
+  }, [badge.id]);
+
+  const fetchBadgeMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('member_badges')
+        .select('*, profiles(*)')
+        .eq('badge_id', badge.id)
+        .order('awarded_at', { ascending: false });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching badge members:', error);
+      toast.error('Failed to load members');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemove = async (memberBadgeId: string, memberName: string) => {
+    if (!confirm(`Remove badge from ${memberName}?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('member_badges')
+        .delete()
+        .eq('id', memberBadgeId);
+
+      if (error) throw error;
+      toast.success('Badge removed from member');
+      fetchBadgeMembers();
+      onSuccess();
+    } catch (error) {
+      console.error('Error removing badge:', error);
+      toast.error('Failed to remove badge');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="modal-view-badge-members">
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <CardTitle>Members with Badge: {badge.name}</CardTitle>
+          <CardDescription>{members.length} members have earned this badge</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">Loading members...</div>
+          ) : members.length > 0 ? (
+            <div className="space-y-3">
+              {members.map(memberBadge => (
+                <div
+                  key={memberBadge.id}
+                  className="flex items-center justify-between p-4 border rounded"
+                  data-testid={`member-badge-${memberBadge.id}`}
+                >
+                  <div className="flex-1">
+                    <div className="font-medium" data-testid={`text-member-name-${memberBadge.id}`}>
+                      {memberBadge.profiles.first_name} {memberBadge.profiles.last_name}
+                    </div>
+                    <div className="text-sm text-gray-600">{memberBadge.profiles.email}</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Awarded: {formatDate(memberBadge.awarded_at)}
+                    </div>
+                    {memberBadge.notes && (
+                      <div className="text-sm text-gray-700 mt-1">
+                        Notes: {memberBadge.notes}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleRemove(memberBadge.id, `${memberBadge.profiles.first_name} ${memberBadge.profiles.last_name}`)}
+                    data-testid={`button-remove-badge-${memberBadge.id}`}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              No members have this badge yet
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4 border-t mt-4">
+            <Button onClick={onClose} data-testid="button-close-members">Close</Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
