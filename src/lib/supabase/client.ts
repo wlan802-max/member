@@ -551,6 +551,167 @@ export type Database = {
           updated_at?: string
         }
       }
+      email_templates: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          subject: string
+          body: string
+          template_type: 'welcome' | 'renewal' | 'expiry' | 'event' | 'newsletter' | 'custom'
+          variables: any | null
+          is_active: boolean
+          is_default: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          description?: string | null
+          subject: string
+          body: string
+          template_type?: 'welcome' | 'renewal' | 'expiry' | 'event' | 'newsletter' | 'custom'
+          variables?: any | null
+          is_active?: boolean
+          is_default?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          description?: string | null
+          subject?: string
+          body?: string
+          template_type?: 'welcome' | 'renewal' | 'expiry' | 'event' | 'newsletter' | 'custom'
+          variables?: any | null
+          is_active?: boolean
+          is_default?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      member_notes: {
+        Row: {
+          id: string
+          profile_id: string
+          created_by: string
+          note: string
+          note_type: 'general' | 'admin' | 'support' | 'payment' | 'behavior'
+          is_private: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          created_by: string
+          note: string
+          note_type?: 'general' | 'admin' | 'support' | 'payment' | 'behavior'
+          is_private?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          created_by?: string
+          note?: string
+          note_type?: 'general' | 'admin' | 'support' | 'payment' | 'behavior'
+          is_private?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      notifications: {
+        Row: {
+          id: string
+          profile_id: string
+          title: string
+          message: string
+          notification_type: 'info' | 'success' | 'warning' | 'error' | 'event' | 'membership' | 'system'
+          link_url: string | null
+          is_read: boolean
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          title: string
+          message: string
+          notification_type?: 'info' | 'success' | 'warning' | 'error' | 'event' | 'membership' | 'system'
+          link_url?: string | null
+          is_read?: boolean
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          title?: string
+          message?: string
+          notification_type?: 'info' | 'success' | 'warning' | 'error' | 'event' | 'membership' | 'system'
+          link_url?: string | null
+          is_read?: boolean
+          read_at?: string | null
+          created_at?: string
+        }
+      }
+      documents: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          file_url: string
+          file_type: string | null
+          file_size: number | null
+          category: 'general' | 'policy' | 'form' | 'guide' | 'legal' | 'financial' | 'other'
+          is_public: boolean
+          uploaded_by: string
+          download_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          description?: string | null
+          file_url: string
+          file_type?: string | null
+          file_size?: number | null
+          category?: 'general' | 'policy' | 'form' | 'guide' | 'legal' | 'financial' | 'other'
+          is_public?: boolean
+          uploaded_by: string
+          download_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          description?: string | null
+          file_url?: string
+          file_type?: string | null
+          file_size?: number | null
+          category?: 'general' | 'policy' | 'form' | 'guide' | 'legal' | 'financial' | 'other'
+          is_public?: boolean
+          uploaded_by?: string
+          download_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
       subscribers: {
         Row: {
           id: string
