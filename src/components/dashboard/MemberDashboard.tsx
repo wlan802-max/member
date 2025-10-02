@@ -52,7 +52,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
@@ -195,6 +195,17 @@ export function MemberDashboard() {
             >
               Mailing Lists
             </button>
+            <button
+              onClick={() => setActiveView('committees')}
+              className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'committees'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              data-testid="tab-committees"
+            >
+              Committees
+            </button>
             {isAdmin && (
               <>
                 <button
@@ -262,6 +273,28 @@ export function MemberDashboard() {
                   data-testid="tab-workflows"
                 >
                   Email Workflows
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-event-registrations')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-event-registrations'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-event-registrations"
+                >
+                  Event Registrations
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-committees')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-committees'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-admin-committees"
+                >
+                  Committees Management
                 </button>
               </>
             )}
@@ -509,8 +542,8 @@ export function MemberDashboard() {
       )}
 
       {/* Events View */}
-      {activeView === 'events' && organization && (
-        <EventsView organizationId={organization.id} onBack={() => setActiveView('dashboard')} />
+      {activeView === 'events' && organization && user?.profile?.id && (
+        <EventsView organizationId={organization.id} profileId={user.profile.id} onBack={() => setActiveView('dashboard')} />
       )}
 
       {/* Messages View */}
@@ -551,6 +584,21 @@ export function MemberDashboard() {
       {/* Admin - Email Workflows View */}
       {activeView === 'admin-workflows' && isAdmin && organization && (
         <EmailWorkflowsManager organizationId={organization.id} />
+      )}
+
+      {/* Admin - Event Registrations View */}
+      {activeView === 'admin-event-registrations' && isAdmin && organization && (
+        <AdminEventRegistrationsView organizationId={organization.id} />
+      )}
+
+      {/* Member - Committees View */}
+      {activeView === 'committees' && organization && user?.profile?.id && (
+        <MemberCommitteesView organizationId={organization.id} profileId={user.profile.id} />
+      )}
+
+      {/* Admin - Committees Management View */}
+      {activeView === 'admin-committees' && isAdmin && organization && (
+        <AdminCommitteesView organizationId={organization.id} />
       )}
 
       {/* Renewal Modal */}
@@ -2436,6 +2484,7 @@ function ProfileView({ user, organization, onBack }: ProfileViewProps) {
 // Events View Component
 interface EventsViewProps {
   organizationId: string;
+  profileId: string;
   onBack: () => void;
 }
 
@@ -2448,19 +2497,34 @@ interface Event {
   end_date: string | null;
   registration_url: string | null;
   max_attendees: number | null;
+  current_attendees: number;
+  registration_deadline: string | null;
+  allow_waitlist: boolean;
+  require_approval: boolean;
 }
 
-function EventsView({ organizationId, onBack }: EventsViewProps) {
+interface EventRegistration {
+  id: string;
+  event_id: string;
+  status: 'registered' | 'waitlist' | 'cancelled' | 'checked_in' | 'pending_approval';
+  registered_at: string;
+}
+
+function EventsView({ organizationId, profileId, onBack }: EventsViewProps) {
   const [events, setEvents] = useState<Event[]>([]);
+  const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [registeringEventId, setRegisteringEventId] = useState<string | null>(null);
+  const [cancellingEventId, setCancellingEventId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchEvents();
-  }, [organizationId]);
+    fetchEventsAndRegistrations();
+  }, [organizationId, profileId]);
 
-  const fetchEvents = async () => {
+  const fetchEventsAndRegistrations = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch events
+      const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('*')
         .eq('organization_id', organizationId)
@@ -2468,21 +2532,170 @@ function EventsView({ organizationId, onBack }: EventsViewProps) {
         .gte('end_date', new Date().toISOString())
         .order('start_date', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching events:', error);
+      if (eventsError) {
+        console.error('Error fetching events:', eventsError);
         toast.error('Failed to load events', {
-          description: error.message
+          description: eventsError.message
         });
         setEvents([]);
       } else {
-        setEvents(data || []);
+        setEvents(eventsData || []);
+      }
+
+      // Fetch user's registrations
+      const { data: registrationsData, error: registrationsError } = await supabase
+        .from('event_registrations')
+        .select('id, event_id, status, registered_at')
+        .eq('organization_id', organizationId)
+        .eq('profile_id', profileId)
+        .neq('status', 'cancelled');
+
+      if (registrationsError) {
+        console.error('Error fetching registrations:', registrationsError);
+      } else {
+        setRegistrations(registrationsData || []);
       }
     } catch (err) {
       console.error('Unexpected error fetching events:', err);
       toast.error('Failed to load events');
       setEvents([]);
+      setRegistrations([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getRegistrationStatus = (eventId: string) => {
+    return registrations.find(reg => reg.event_id === eventId);
+  };
+
+  const isRegistrationDeadlinePassed = (deadline: string | null) => {
+    if (!deadline) return false;
+    return new Date(deadline) < new Date();
+  };
+
+  const handleRegister = async (event: Event) => {
+    if (!profileId) {
+      toast.error('You must be logged in to register');
+      return;
+    }
+
+    // Check registration deadline
+    if (isRegistrationDeadlinePassed(event.registration_deadline)) {
+      toast.error('Registration deadline has passed');
+      return;
+    }
+
+    setRegisteringEventId(event.id);
+
+    try {
+      // Determine status based on capacity and settings
+      let status: 'registered' | 'waitlist' | 'pending_approval' = 'registered';
+      
+      if (event.require_approval) {
+        status = 'pending_approval';
+      } else if (event.max_attendees && event.current_attendees >= event.max_attendees) {
+        if (event.allow_waitlist) {
+          status = 'waitlist';
+        } else {
+          toast.error('Event is full and waitlist is not available');
+          setRegisteringEventId(null);
+          return;
+        }
+      }
+
+      // Create registration
+      const { error } = await supabase
+        .from('event_registrations')
+        .insert({
+          event_id: event.id,
+          profile_id: profileId,
+          organization_id: organizationId,
+          status: status
+        });
+
+      if (error) {
+        console.error('Error registering for event:', error);
+        toast.error('Failed to register for event', {
+          description: error.message
+        });
+      } else {
+        if (status === 'pending_approval') {
+          toast.success('Registration submitted for approval');
+        } else if (status === 'waitlist') {
+          toast.success('Added to waitlist');
+        } else {
+          toast.success('Successfully registered for event');
+        }
+        
+        // Refresh data
+        await fetchEventsAndRegistrations();
+      }
+    } catch (err) {
+      console.error('Unexpected error registering:', err);
+      toast.error('Failed to register for event');
+    } finally {
+      setRegisteringEventId(null);
+    }
+  };
+
+  const handleCancelRegistration = async (eventId: string, registrationId: string) => {
+    setCancellingEventId(eventId);
+
+    try {
+      const { error } = await supabase
+        .from('event_registrations')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (error) {
+        console.error('Error cancelling registration:', error);
+        toast.error('Failed to cancel registration', {
+          description: error.message
+        });
+      } else {
+        toast.success('Registration cancelled');
+        // Refresh data
+        await fetchEventsAndRegistrations();
+      }
+    } catch (err) {
+      console.error('Unexpected error cancelling registration:', err);
+      toast.error('Failed to cancel registration');
+    } finally {
+      setCancellingEventId(null);
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'registered':
+        return 'default';
+      case 'waitlist':
+        return 'secondary';
+      case 'pending_approval':
+        return 'outline';
+      case 'checked_in':
+        return 'default';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'registered':
+        return 'Registered';
+      case 'waitlist':
+        return 'Waitlist';
+      case 'pending_approval':
+        return 'Pending Approval';
+      case 'checked_in':
+        return 'Checked In';
+      default:
+        return status;
     }
   };
 
@@ -2525,16 +2738,16 @@ function EventsView({ organizationId, onBack }: EventsViewProps) {
             <Calendar className="h-5 w-5" />
             Upcoming Events
           </CardTitle>
-          <CardDescription>View organization events and activities</CardDescription>
+          <CardDescription>View and register for organization events</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="text-center py-8" data-testid="loading-events">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
               <p className="text-gray-600">Loading events...</p>
             </div>
           ) : events.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12" data-testid="no-events">
               <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <h3 className="text-lg font-medium mb-2">No Upcoming Events</h3>
               <p className="text-gray-600">
@@ -2543,43 +2756,138 @@ function EventsView({ organizationId, onBack }: EventsViewProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {events.map((event) => (
-                <div key={event.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow" data-testid={`event-card-${event.id}`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold">{event.title}</h3>
-                    {event.registration_url && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => window.open(event.registration_url!, '_blank')}
-                        data-testid={`button-register-${event.id}`}
-                      >
-                        Register
-                      </Button>
-                    )}
-                  </div>
-                  {event.description && (
-                    <p className="text-gray-600 mb-2">{event.description}</p>
-                  )}
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {formatEventDate(event.start_date, event.end_date)}
+              {events.map((event) => {
+                const registration = getRegistrationStatus(event.id);
+                const isDeadlinePassed = isRegistrationDeadlinePassed(event.registration_deadline);
+                const isFull = event.max_attendees ? event.current_attendees >= event.max_attendees : false;
+                const isRegistering = registeringEventId === event.id;
+                const isCancelling = cancellingEventId === event.id;
+
+                return (
+                  <div 
+                    key={event.id} 
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow" 
+                    data-testid={`event-card-${event.id}`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-semibold" data-testid={`event-title-${event.id}`}>
+                            {event.title}
+                          </h3>
+                          {registration && (
+                            <Badge 
+                              variant={getStatusBadgeVariant(registration.status)}
+                              data-testid={`badge-status-${event.id}`}
+                            >
+                              {getStatusLabel(registration.status)}
+                            </Badge>
+                          )}
+                        </div>
+                        {event.description && (
+                          <p className="text-gray-600 mb-2" data-testid={`event-description-${event.id}`}>
+                            {event.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    {event.location && (
-                      <div className="flex items-center gap-1">
-                        <span>📍</span>
-                        {event.location}
+
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
+                      <div className="flex items-center gap-1" data-testid={`event-date-${event.id}`}>
+                        <Calendar className="h-4 w-4" />
+                        {formatEventDate(event.start_date, event.end_date)}
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center gap-1" data-testid={`event-location-${event.id}`}>
+                          <span>📍</span>
+                          {event.location}
+                        </div>
+                      )}
+                      {event.max_attendees && (
+                        <div 
+                          className="flex items-center gap-1 font-medium" 
+                          data-testid={`event-capacity-${event.id}`}
+                        >
+                          <span>👥</span>
+                          {event.current_attendees}/{event.max_attendees} spots filled
+                          {isFull && !event.allow_waitlist && (
+                            <Badge variant="secondary" className="ml-1">Full</Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {event.registration_deadline && (
+                      <div className="text-sm mb-3" data-testid={`event-deadline-${event.id}`}>
+                        <span className="font-medium">Registration Deadline:</span>{' '}
+                        <span className={isDeadlinePassed ? 'text-red-600 font-medium' : 'text-gray-600'}>
+                          {formatDate(event.registration_deadline)}
+                          {isDeadlinePassed && ' (Passed)'}
+                        </span>
                       </div>
                     )}
-                    {event.max_attendees && (
-                      <div className="flex items-center gap-1">
-                        <span>👥</span>
-                        Max {event.max_attendees} attendees
-                      </div>
+
+                    <div className="flex gap-2">
+                      {registration ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCancelRegistration(event.id, registration.id)}
+                          disabled={isCancelling}
+                          data-testid={`button-cancel-registration-${event.id}`}
+                        >
+                          {isCancelling ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            <>
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel Registration
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => handleRegister(event)}
+                          disabled={isRegistering || isDeadlinePassed || (isFull && !event.allow_waitlist)}
+                          data-testid={`button-register-${event.id}`}
+                        >
+                          {isRegistering ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Registering...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {isFull && event.allow_waitlist ? 'Join Waitlist' : 'RSVP'}
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {event.registration_url && !registration && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(event.registration_url!, '_blank')}
+                          data-testid={`button-external-register-${event.id}`}
+                        >
+                          External Registration
+                        </Button>
+                      )}
+                    </div>
+
+                    {event.require_approval && !registration && (
+                      <p className="text-xs text-gray-500 mt-2" data-testid={`event-approval-note-${event.id}`}>
+                        * Registration requires approval from event organizers
+                      </p>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -3811,6 +4119,1550 @@ function CreateCampaignModal({ organizationId, onClose, onSuccess }: CreateCampa
           </form>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// Admin Event Registrations View Component
+interface AdminEventRegistrationsViewProps {
+  organizationId: string;
+}
+
+interface EventWithRegistrations {
+  id: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  end_date: string | null;
+  location: string | null;
+  max_attendees: number | null;
+  registration_count: number;
+  registered_count: number;
+  waitlist_count: number;
+  checked_in_count: number;
+  cancelled_count: number;
+}
+
+interface RegistrationWithProfile {
+  id: string;
+  event_id: string;
+  profile_id: string;
+  status: 'registered' | 'waitlist' | 'cancelled' | 'checked_in' | 'pending_approval';
+  registered_at: string;
+  checked_in_at: string | null;
+  profiles: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
+
+function AdminEventRegistrationsView({ organizationId }: AdminEventRegistrationsViewProps) {
+  const [events, setEvents] = useState<EventWithRegistrations[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithRegistrations | null>(null);
+  const [registrations, setRegistrations] = useState<RegistrationWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [registrationsLoading, setRegistrationsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedRegistrations, setSelectedRegistrations] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    fetchEvents();
+  }, [organizationId]);
+
+  useEffect(() => {
+    if (selectedEvent) {
+      fetchRegistrations(selectedEvent.id);
+    }
+  }, [selectedEvent]);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('start_date', { ascending: false });
+
+      if (eventsError) throw eventsError;
+
+      const eventsWithCounts = await Promise.all(
+        (eventsData || []).map(async (event) => {
+          const { data: registrationsData } = await supabase
+            .from('event_registrations')
+            .select('status')
+            .eq('event_id', event.id);
+
+          const registrations = registrationsData || [];
+          return {
+            ...event,
+            registration_count: registrations.length,
+            registered_count: registrations.filter(r => r.status === 'registered').length,
+            waitlist_count: registrations.filter(r => r.status === 'waitlist').length,
+            checked_in_count: registrations.filter(r => r.status === 'checked_in').length,
+            cancelled_count: registrations.filter(r => r.status === 'cancelled').length,
+          };
+        })
+      );
+
+      setEvents(eventsWithCounts);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast.error('Failed to load events');
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRegistrations = async (eventId: string) => {
+    setRegistrationsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select(`
+          id,
+          event_id,
+          profile_id,
+          status,
+          registered_at,
+          checked_in_at,
+          profiles:profile_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('event_id', eventId)
+        .order('registered_at', { ascending: false });
+
+      if (error) throw error;
+      setRegistrations((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching registrations:', error);
+      toast.error('Failed to load registrations');
+      setRegistrations([]);
+    } finally {
+      setRegistrationsLoading(false);
+    }
+  };
+
+  const handleCheckIn = async (registrationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('event_registrations')
+        .update({
+          status: 'checked_in',
+          checked_in_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      toast.success('Member checked in successfully');
+      if (selectedEvent) {
+        await fetchRegistrations(selectedEvent.id);
+        await fetchEvents();
+      }
+    } catch (error) {
+      console.error('Error checking in:', error);
+      toast.error('Failed to check in member');
+    }
+  };
+
+  const handleBulkCheckIn = async () => {
+    if (selectedRegistrations.size === 0) {
+      toast.error('Please select registrations to check in');
+      return;
+    }
+
+    try {
+      const updates = Array.from(selectedRegistrations).map(id =>
+        supabase
+          .from('event_registrations')
+          .update({
+            status: 'checked_in',
+            checked_in_at: new Date().toISOString()
+          })
+          .eq('id', id)
+      );
+
+      await Promise.all(updates);
+      toast.success(`Checked in ${selectedRegistrations.size} members`);
+      setSelectedRegistrations(new Set());
+      if (selectedEvent) {
+        await fetchRegistrations(selectedEvent.id);
+        await fetchEvents();
+      }
+    } catch (error) {
+      console.error('Error bulk checking in:', error);
+      toast.error('Failed to bulk check in');
+    }
+  };
+
+  const exportToCSV = () => {
+    if (filteredRegistrations.length === 0) {
+      toast.error('No registrations to export');
+      return;
+    }
+
+    const headers = ['Name', 'Email', 'Status', 'Registered Date', 'Checked In Date'];
+    const rows = filteredRegistrations.map(reg => [
+      `${reg.profiles.first_name} ${reg.profiles.last_name}`,
+      reg.profiles.email,
+      reg.status,
+      formatDate(reg.registered_at),
+      reg.checked_in_at ? formatDate(reg.checked_in_at) : 'N/A'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedEvent?.title || 'event'}-registrations-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV exported successfully');
+  };
+
+  const filteredRegistrations = registrations.filter(reg => {
+    const matchesSearch = searchTerm === '' || 
+      reg.profiles.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reg.profiles.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reg.profiles.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const toggleSelectAll = () => {
+    if (selectedRegistrations.size === filteredRegistrations.length) {
+      setSelectedRegistrations(new Set());
+    } else {
+      setSelectedRegistrations(new Set(filteredRegistrations.map(r => r.id)));
+    }
+  };
+
+  const toggleSelectRegistration = (id: string) => {
+    const newSelected = new Set(selectedRegistrations);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedRegistrations(newSelected);
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'registered':
+        return 'default';
+      case 'checked_in':
+        return 'default';
+      case 'waitlist':
+        return 'secondary';
+      case 'cancelled':
+        return 'secondary';
+      case 'pending_approval':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Event Registrations</h2>
+        <div className="text-center py-12" data-testid="loading-events">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading events...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Event Registrations</h2>
+        <p className="text-gray-600 mt-1">Manage event registrations and check-ins</p>
+      </div>
+
+      {!selectedEvent ? (
+        <div>
+          {events.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center" data-testid="no-events">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <h3 className="text-lg font-medium mb-2">No Events Found</h3>
+                <p className="text-gray-600">There are no events in the system yet.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {events.map((event) => (
+                <Card 
+                  key={event.id} 
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => setSelectedEvent(event)}
+                  data-testid={`event-card-${event.id}`}
+                >
+                  <CardHeader>
+                    <CardTitle className="text-lg" data-testid={`event-title-${event.id}`}>
+                      {event.title}
+                    </CardTitle>
+                    <CardDescription data-testid={`event-date-${event.id}`}>
+                      {formatDate(event.start_date)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span data-testid={`event-registered-${event.id}`}>{event.registered_count} Registered</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-blue-600" />
+                          <span data-testid={`event-checked-in-${event.id}`}>{event.checked_in_count} Checked In</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-yellow-600" />
+                          <span data-testid={`event-waitlist-${event.id}`}>{event.waitlist_count} Waitlist</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <X className="h-4 w-4 text-red-600" />
+                          <span data-testid={`event-cancelled-${event.id}`}>{event.cancelled_count} Cancelled</span>
+                        </div>
+                      </div>
+                      {event.location && (
+                        <p className="text-sm text-gray-600">📍 {event.location}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold" data-testid="selected-event-title">
+                {selectedEvent.title}
+              </h3>
+              <p className="text-gray-600 text-sm">{formatDate(selectedEvent.start_date)}</p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSelectedEvent(null);
+                setSelectedRegistrations(new Set());
+                setSearchTerm('');
+                setStatusFilter('all');
+              }}
+              data-testid="button-back-to-events"
+            >
+              ← Back to Events
+            </Button>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card data-testid="stat-total-registered">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Total Registered</p>
+                    <p className="text-2xl font-bold">{selectedEvent.registered_count}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card data-testid="stat-checked-in">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Checked In</p>
+                    <p className="text-2xl font-bold">{selectedEvent.checked_in_count}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card data-testid="stat-waitlist">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-yellow-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Waitlist</p>
+                    <p className="text-2xl font-bold">{selectedEvent.waitlist_count}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card data-testid="stat-cancelled">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2">
+                  <X className="h-5 w-5 text-red-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Cancelled</p>
+                    <p className="text-2xl font-bold">{selectedEvent.cancelled_count}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filters and Actions */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    data-testid="input-search-members"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    data-testid="select-status-filter"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="registered">Registered</option>
+                    <option value="checked_in">Checked In</option>
+                    <option value="waitlist">Waitlist</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="pending_approval">Pending Approval</option>
+                  </select>
+                  <Button
+                    variant="outline"
+                    onClick={exportToCSV}
+                    disabled={filteredRegistrations.length === 0}
+                    data-testid="button-export-csv"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                  {selectedRegistrations.size > 0 && (
+                    <Button
+                      onClick={handleBulkCheckIn}
+                      data-testid="button-bulk-check-in"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Check In ({selectedRegistrations.size})
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Registrations Table */}
+          <Card>
+            <CardContent className="p-0">
+              {registrationsLoading ? (
+                <div className="text-center py-12" data-testid="loading-registrations">
+                  <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Loading registrations...</p>
+                </div>
+              ) : filteredRegistrations.length === 0 ? (
+                <div className="text-center py-12" data-testid="no-registrations">
+                  <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <h3 className="text-lg font-medium mb-2">No Registrations Found</h3>
+                  <p className="text-gray-600">
+                    {searchTerm || statusFilter !== 'all' 
+                      ? 'No registrations match your filters.'
+                      : 'No one has registered for this event yet.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-6 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={selectedRegistrations.size === filteredRegistrations.length && filteredRegistrations.length > 0}
+                            onChange={toggleSelectAll}
+                            data-testid="checkbox-select-all"
+                            className="rounded border-gray-300"
+                          />
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Member Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Registered Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredRegistrations.map((registration) => (
+                        <tr 
+                          key={registration.id}
+                          data-testid={`registration-row-${registration.id}`}
+                          className="hover:bg-gray-50"
+                        >
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedRegistrations.has(registration.id)}
+                              onChange={() => toggleSelectRegistration(registration.id)}
+                              data-testid={`checkbox-select-${registration.id}`}
+                              className="rounded border-gray-300"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" data-testid={`member-name-${registration.id}`}>
+                            {registration.profiles.first_name} {registration.profiles.last_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600" data-testid={`member-email-${registration.id}`}>
+                            {registration.profiles.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap" data-testid={`member-status-${registration.id}`}>
+                            <Badge variant={getStatusBadgeVariant(registration.status)}>
+                              {registration.status.replace('_', ' ')}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600" data-testid={`member-registered-date-${registration.id}`}>
+                            {formatDate(registration.registered_at)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {registration.status !== 'checked_in' && registration.status !== 'cancelled' && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleCheckIn(registration.id)}
+                                data-testid={`button-check-in-${registration.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Check In
+                              </Button>
+                            )}
+                            {registration.status === 'checked_in' && (
+                              <span className="text-green-600 font-medium">
+                                ✓ Checked In
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Member Committees View Component
+interface MemberCommitteesViewProps {
+  organizationId: string;
+  profileId: string;
+}
+
+interface Committee {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  mailing_list_id: string | null;
+  is_active: boolean;
+  member_count: number;
+}
+
+interface CommitteeMembership {
+  committee_id: string;
+  role: string;
+  committee: Committee;
+}
+
+function MemberCommitteesView({ organizationId, profileId }: MemberCommitteesViewProps) {
+  const [allCommittees, setAllCommittees] = useState<Committee[]>([]);
+  const [userMemberships, setUserMemberships] = useState<CommitteeMembership[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCommittees = async () => {
+      setLoading(true);
+      try {
+        const [committeesResponse, membershipsResponse] = await Promise.all([
+          supabase
+            .from('committees')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .eq('is_active', true)
+            .order('name'),
+          supabase
+            .from('committee_members')
+            .select('committee_id, role, committees(*)')
+            .eq('profile_id', profileId)
+        ]);
+
+        if (committeesResponse.error) throw committeesResponse.error;
+        if (membershipsResponse.error) throw membershipsResponse.error;
+
+        setAllCommittees(committeesResponse.data || []);
+        setUserMemberships(membershipsResponse.data as any || []);
+      } catch (error) {
+        console.error('Error fetching committees:', error);
+        toast.error('Failed to load committees');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCommittees();
+  }, [organizationId, profileId]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6" data-testid="loading-committees">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const userCommitteeIds = new Set(userMemberships.map(m => m.committee_id));
+  const myCommittees = allCommittees.filter(c => userCommitteeIds.has(c.id));
+  const otherCommittees = allCommittees.filter(c => !userCommitteeIds.has(c.id));
+
+  const getRoleDisplay = (role: string) => {
+    return role.replace('_', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* My Committees Section */}
+      {myCommittees.length > 0 && (
+        <div data-testid="my-committees-section">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">My Committees</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {myCommittees.map(committee => {
+              const membership = userMemberships.find(m => m.committee_id === committee.id);
+              return (
+                <Card key={committee.id} className="border-l-4 border-l-blue-600" data-testid={`my-committee-${committee.id}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="flex items-center gap-2">
+                          {committee.name}
+                          <Badge variant="default" data-testid={`my-role-${committee.id}`}>
+                            {getRoleDisplay(membership?.role || 'member')}
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription>{committee.description || 'No description'}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-gray-600">
+                      <p className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <span data-testid={`member-count-${committee.id}`}>{committee.member_count} member{committee.member_count !== 1 ? 's' : ''}</span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* All Committees Section */}
+      <div data-testid="all-committees-section">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          {myCommittees.length > 0 ? 'Other Committees' : 'All Committees'}
+        </h2>
+        {otherCommittees.length === 0 && myCommittees.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium mb-2">No Committees Available</h3>
+              <p className="text-gray-600">There are no active committees in this organization.</p>
+            </CardContent>
+          </Card>
+        ) : otherCommittees.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+              <h3 className="text-lg font-medium mb-2">You're in all committees!</h3>
+              <p className="text-gray-600">There are no other committees to join.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {otherCommittees.map(committee => (
+              <Card key={committee.id} data-testid={`committee-${committee.id}`}>
+                <CardHeader>
+                  <CardTitle>{committee.name}</CardTitle>
+                  <CardDescription>{committee.description || 'No description'}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-gray-600">
+                    <p className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span data-testid={`other-member-count-${committee.id}`}>{committee.member_count} member{committee.member_count !== 1 ? 's' : ''}</span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Admin Committees View Component
+interface AdminCommitteesViewProps {
+  organizationId: string;
+}
+
+interface CommitteeMember {
+  id: string;
+  profile_id: string;
+  role: string;
+  profiles: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
+
+function AdminCommitteesView({ organizationId }: AdminCommitteesViewProps) {
+  const [committees, setCommittees] = useState<Committee[]>([]);
+  const [mailingLists, setMailingLists] = useState<MailingList[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [selectedCommittee, setSelectedCommittee] = useState<Committee | null>(null);
+
+  const fetchCommittees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('committees')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('name');
+
+      if (error) throw error;
+      setCommittees(data || []);
+    } catch (error) {
+      console.error('Error fetching committees:', error);
+      toast.error('Failed to load committees');
+    }
+  };
+
+  const fetchMailingLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('mailing_lists')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('name');
+
+      if (error) throw error;
+      setMailingLists(data || []);
+    } catch (error) {
+      console.error('Error fetching mailing lists:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([fetchCommittees(), fetchMailingLists()]);
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [organizationId]);
+
+  const handleDelete = async (committeeId: string, committeeName: string) => {
+    if (!confirm(`Are you sure you want to delete "${committeeName}"? This will also remove all committee members.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('committees')
+        .delete()
+        .eq('id', committeeId);
+
+      if (error) throw error;
+
+      toast.success('Committee deleted successfully');
+      fetchCommittees();
+    } catch (error) {
+      console.error('Error deleting committee:', error);
+      toast.error('Failed to delete committee');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6" data-testid="loading-admin-committees">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-40 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Committees Management</h2>
+          <p className="text-gray-600 mt-1">Manage organization committees and their members</p>
+        </div>
+        <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-committee">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Committee
+        </Button>
+      </div>
+
+      {committees.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <h3 className="text-lg font-medium mb-2">No Committees Yet</h3>
+            <p className="text-gray-600 mb-4">Create your first committee to get started.</p>
+            <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-first-committee">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Committee
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {committees.map(committee => {
+            const linkedMailingList = mailingLists.find(ml => ml.id === committee.mailing_list_id);
+            return (
+              <Card key={committee.id} data-testid={`admin-committee-${committee.id}`}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="flex items-center gap-2">
+                        {committee.name}
+                        {!committee.is_active && (
+                          <Badge variant="secondary">Inactive</Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription>{committee.description || 'No description'}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2 text-gray-600">
+                        <User className="h-4 w-4" />
+                        <span data-testid={`admin-member-count-${committee.id}`}>{committee.member_count} member{committee.member_count !== 1 ? 's' : ''}</span>
+                      </span>
+                      {linkedMailingList && (
+                        <span className="flex items-center gap-2 text-gray-600">
+                          <Mail className="h-4 w-4" />
+                          <span data-testid={`mailing-list-${committee.id}`}>{linkedMailingList.name}</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedCommittee(committee);
+                          setShowMembersModal(true);
+                        }}
+                        data-testid={`button-view-members-${committee.id}`}
+                      >
+                        <User className="h-4 w-4 mr-1" />
+                        View Members
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedCommittee(committee);
+                          setShowEditModal(true);
+                        }}
+                        data-testid={`button-edit-committee-${committee.id}`}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(committee.id, committee.name)}
+                        data-testid={`button-delete-committee-${committee.id}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {showCreateModal && (
+        <CreateCommitteeModal
+          organizationId={organizationId}
+          mailingLists={mailingLists}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchCommittees();
+          }}
+        />
+      )}
+
+      {showEditModal && selectedCommittee && (
+        <EditCommitteeModal
+          committee={selectedCommittee}
+          mailingLists={mailingLists}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedCommittee(null);
+          }}
+          onSuccess={() => {
+            setShowEditModal(false);
+            setSelectedCommittee(null);
+            fetchCommittees();
+          }}
+        />
+      )}
+
+      {showMembersModal && selectedCommittee && (
+        <CommitteeMembersModal
+          committee={selectedCommittee}
+          organizationId={organizationId}
+          onClose={() => {
+            setShowMembersModal(false);
+            setSelectedCommittee(null);
+          }}
+          onSuccess={() => {
+            fetchCommittees();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Create Committee Modal
+interface CreateCommitteeModalProps {
+  organizationId: string;
+  mailingLists: MailingList[];
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CreateCommitteeModal({ organizationId, mailingLists, onClose, onSuccess }: CreateCommitteeModalProps) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [slug, setSlug] = useState('');
+  const [mailingListId, setMailingListId] = useState<string>('');
+  const [createMailingList, setCreateMailingList] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const generateSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    if (!slug || slug === generateSlug(name)) {
+      setSlug(generateSlug(value));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      let finalMailingListId = mailingListId || null;
+
+      if (createMailingList) {
+        const { data: newList, error: listError } = await supabase
+          .from('mailing_lists')
+          .insert({
+            organization_id: organizationId,
+            name: `${name} Members`,
+            description: `Mailing list for ${name} committee members`,
+            is_public: false
+          })
+          .select()
+          .single();
+
+        if (listError) throw listError;
+        finalMailingListId = newList.id;
+      }
+
+      const { error } = await supabase
+        .from('committees')
+        .insert({
+          organization_id: organizationId,
+          name,
+          description: description || null,
+          slug,
+          mailing_list_id: finalMailingListId,
+          is_active: true,
+          member_count: 0
+        });
+
+      if (error) throw error;
+
+      toast.success('Committee created successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error creating committee:', error);
+      toast.error('Failed to create committee');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="create-committee-modal">
+      <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Create Committee</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" data-testid="button-close-modal">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Committee Name *</label>
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="e.g., Social Committee"
+              required
+              data-testid="input-committee-name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of the committee"
+              className="w-full px-3 py-2 border rounded-md"
+              rows={3}
+              data-testid="input-committee-description"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Slug *</label>
+            <Input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="social-committee"
+              required
+              data-testid="input-committee-slug"
+            />
+            <p className="text-xs text-gray-500 mt-1">Used in URLs and identifiers</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Mailing List (Optional)</label>
+            <select
+              value={mailingListId}
+              onChange={(e) => {
+                setMailingListId(e.target.value);
+                if (e.target.value) setCreateMailingList(false);
+              }}
+              className="w-full px-3 py-2 border rounded-md"
+              disabled={createMailingList}
+              data-testid="select-mailing-list"
+            >
+              <option value="">No mailing list</option>
+              {mailingLists.map(list => (
+                <option key={list.id} value={list.id}>{list.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="create-list"
+              checked={createMailingList}
+              onChange={(e) => {
+                setCreateMailingList(e.target.checked);
+                if (e.target.checked) setMailingListId('');
+              }}
+              className="rounded"
+              data-testid="checkbox-create-mailing-list"
+            />
+            <label htmlFor="create-list" className="text-sm">Create linked mailing list</label>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading} data-testid="button-submit-committee">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Committee
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Edit Committee Modal
+interface EditCommitteeModalProps {
+  committee: Committee;
+  mailingLists: MailingList[];
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function EditCommitteeModal({ committee, mailingLists, onClose, onSuccess }: EditCommitteeModalProps) {
+  const [name, setName] = useState(committee.name);
+  const [description, setDescription] = useState(committee.description || '');
+  const [slug, setSlug] = useState(committee.slug);
+  const [mailingListId, setMailingListId] = useState<string>(committee.mailing_list_id || '');
+  const [isActive, setIsActive] = useState(committee.is_active);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('committees')
+        .update({
+          name,
+          description: description || null,
+          slug,
+          mailing_list_id: mailingListId || null,
+          is_active: isActive
+        })
+        .eq('id', committee.id);
+
+      if (error) throw error;
+
+      toast.success('Committee updated successfully');
+      onSuccess();
+    } catch (error) {
+      console.error('Error updating committee:', error);
+      toast.error('Failed to update committee');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="edit-committee-modal">
+      <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Edit Committee</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" data-testid="button-close-edit-modal">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Committee Name *</label>
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              data-testid="input-edit-committee-name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md"
+              rows={3}
+              data-testid="input-edit-committee-description"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Slug *</label>
+            <Input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              required
+              data-testid="input-edit-committee-slug"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Mailing List (Optional)</label>
+            <select
+              value={mailingListId}
+              onChange={(e) => setMailingListId(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md"
+              data-testid="select-edit-mailing-list"
+            >
+              <option value="">No mailing list</option>
+              {mailingLists.map(list => (
+                <option key={list.id} value={list.id}>{list.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is-active"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="rounded"
+              data-testid="checkbox-is-active"
+            />
+            <label htmlFor="is-active" className="text-sm">Committee is active</label>
+          </div>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel-edit">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading} data-testid="button-submit-edit-committee">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Committee Members Modal
+interface CommitteeMembersModalProps {
+  committee: Committee;
+  organizationId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CommitteeMembersModal({ committee, organizationId, onClose, onSuccess }: CommitteeMembersModalProps) {
+  const [members, setMembers] = useState<CommitteeMember[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState('');
+  const [selectedRole, setSelectedRole] = useState('member');
+  const [adding, setAdding] = useState(false);
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('committee_members')
+        .select('id, profile_id, role, profiles(id, first_name, last_name, email)')
+        .eq('committee_id', committee.id);
+
+      if (error) throw error;
+      setMembers(data as any || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      toast.error('Failed to load committee members');
+    }
+  };
+
+  const fetchProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('first_name');
+
+      if (error) throw error;
+      setProfiles(data || []);
+    } catch (error) {
+      console.error('Error fetching profiles:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchMembers(), fetchProfiles()]);
+      setLoading(false);
+    };
+    loadData();
+  }, [committee.id]);
+
+  const handleAddMember = async () => {
+    if (!selectedProfileId) {
+      toast.error('Please select a member');
+      return;
+    }
+
+    setAdding(true);
+    try {
+      const { error } = await supabase
+        .from('committee_members')
+        .insert({
+          committee_id: committee.id,
+          profile_id: selectedProfileId,
+          role: selectedRole
+        });
+
+      if (error) throw error;
+
+      await supabase
+        .from('committees')
+        .update({ member_count: members.length + 1 })
+        .eq('id', committee.id);
+
+      toast.success('Member added successfully');
+      setShowAddMember(false);
+      setSelectedProfileId('');
+      setSelectedRole('member');
+      await fetchMembers();
+      onSuccess();
+    } catch (error) {
+      console.error('Error adding member:', error);
+      toast.error('Failed to add member');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleChangeRole = async (memberId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('committee_members')
+        .update({ role: newRole })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast.success('Role updated successfully');
+      await fetchMembers();
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update role');
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!confirm(`Remove ${memberName} from this committee?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('committee_members')
+        .delete()
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      await supabase
+        .from('committees')
+        .update({ member_count: Math.max(0, members.length - 1) })
+        .eq('id', committee.id);
+
+      toast.success('Member removed successfully');
+      await fetchMembers();
+      onSuccess();
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast.error('Failed to remove member');
+    }
+  };
+
+  const availableProfiles = profiles.filter(
+    p => !members.some(m => m.profile_id === p.id)
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="committee-members-modal">
+      <div className="bg-white rounded-lg p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-xl font-bold">{committee.name} - Members</h2>
+            <p className="text-sm text-gray-600">{members.length} member{members.length !== 1 ? 's' : ''}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700" data-testid="button-close-members-modal">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading members...</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-4">
+              {showAddMember ? (
+                <div className="border rounded-lg p-4 space-y-4 bg-gray-50">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Select Member</label>
+                    <select
+                      value={selectedProfileId}
+                      onChange={(e) => setSelectedProfileId(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                      data-testid="select-add-member"
+                    >
+                      <option value="">Choose a member...</option>
+                      {availableProfiles.map(profile => (
+                        <option key={profile.id} value={profile.id}>
+                          {profile.first_name} {profile.last_name} ({profile.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Role</label>
+                    <select
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                      data-testid="select-member-role"
+                    >
+                      <option value="member">Member</option>
+                      <option value="chair">Chair</option>
+                      <option value="vice_chair">Vice Chair</option>
+                      <option value="secretary">Secretary</option>
+                      <option value="treasurer">Treasurer</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={handleAddMember} disabled={adding} data-testid="button-confirm-add-member">
+                      {adding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Add Member
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAddMember(false)} data-testid="button-cancel-add-member">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button onClick={() => setShowAddMember(true)} data-testid="button-add-member">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Member
+                </Button>
+              )}
+            </div>
+
+            {members.length === 0 ? (
+              <div className="text-center py-12">
+                <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <h3 className="text-lg font-medium mb-2">No Members Yet</h3>
+                <p className="text-gray-600">Add members to this committee using the button above.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {members.map(member => (
+                  <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`committee-member-${member.id}`}>
+                    <div>
+                      <h4 className="font-medium">
+                        {member.profiles.first_name} {member.profiles.last_name}
+                      </h4>
+                      <p className="text-sm text-gray-600">{member.profiles.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={member.role}
+                        onChange={(e) => handleChangeRole(member.id, e.target.value)}
+                        className="px-3 py-1 border rounded-md text-sm"
+                        data-testid={`select-role-${member.id}`}
+                      >
+                        <option value="member">Member</option>
+                        <option value="chair">Chair</option>
+                        <option value="vice_chair">Vice Chair</option>
+                        <option value="secretary">Secretary</option>
+                        <option value="treasurer">Treasurer</option>
+                      </select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRemoveMember(member.id, `${member.profiles.first_name} ${member.profiles.last_name}`)}
+                        data-testid={`button-remove-member-${member.id}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
