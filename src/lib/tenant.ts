@@ -14,6 +14,39 @@ export interface Organization {
 }
 
 export const tenant = {
+  async getOrganizationByCustomDomain(domain: string): Promise<Organization | null> {
+    console.log('Getting organization for custom domain:', domain)
+    
+    // Query organization_domains table to find the organization
+    const { data: domainData, error: domainError } = await supabase
+      .from('organization_domains')
+      .select('organization_id')
+      .eq('domain', domain.toLowerCase())
+      .eq('verification_status', 'verified')
+      .single()
+
+    if (domainError || !domainData) {
+      console.log('Custom domain not found or not verified:', domainError)
+      return null
+    }
+
+    // Load the organization
+    const { data: orgData, error: orgError } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('id', domainData.organization_id)
+      .eq('is_active', true)
+      .single()
+
+    if (orgError || !orgData) {
+      console.log('Organization not found for custom domain:', orgError)
+      return null
+    }
+
+    console.log('Found organization via custom domain:', orgData)
+    return orgData
+  },
+
   async getOrganizationBySubdomain(subdomain: string): Promise<Organization | null> {
     console.log('Getting organization for subdomain:', subdomain)
     const { data, error } = await supabase
@@ -97,6 +130,24 @@ export const tenant = {
     // Don't try to get organization for super admin subdomain
     if (this.isSuperAdminSubdomain()) return null
     
+    // First, check if we're on a custom domain
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : null
+    if (hostname) {
+      // Skip custom domain check for localhost, IP addresses, and known subdomains
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
+      const isSubdomain = hostname.includes('.member.ringing.org.uk')
+      
+      if (!isLocalhost && !isSubdomain) {
+        console.log('Checking if hostname is a custom domain:', hostname)
+        const org = await this.getOrganizationByCustomDomain(hostname)
+        if (org) {
+          console.log('Found organization via custom domain')
+          return org
+        }
+      }
+    }
+    
+    // Fallback to subdomain/URL parameter detection
     const subdomain = this.getCurrentSubdomain()
     if (!subdomain) return null
     
