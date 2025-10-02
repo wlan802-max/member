@@ -1,0 +1,36 @@
+index-T6W0CdtP.js:64 Current hostname: admin.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: admin
+index-T6W0CdtP.js:64 useAuth: Starting auth check
+index-T6W0CdtP.js:64 Loading organization...
+index-T6W0CdtP.js:64 Checking if super admin subdomain for hostname: admin.member.ringing.org.uk
+index-T6W0CdtP.js:64 Production mode, is admin: true
+index-T6W0CdtP.js:64 Detected super admin subdomain
+index-T6W0CdtP.js:64 Current hostname: admin.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: admin
+index-T6W0CdtP.js:64 useAuth: getCurrentUser resolved with user: null
+index-T6W0CdtP.js:64 Current hostname: admin.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: admin
+index-T6W0CdtP.js:224 Super admin portal detected, user: null
+index-T6W0CdtP.js:224 No user, showing super admin auth
+index-T6W0CdtP.js:64 useAuth: Starting auth check
+index-T6W0CdtP.js:64 useAuth: Auth state changed, user: null
+index-T6W0CdtP.js:64 Current hostname: admin.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: admin
+index-T6W0CdtP.js:224 Super admin portal detected, user: null
+index-T6W0CdtP.js:224 No user, showing super admin auth
+index-T6W0CdtP.js:64 useAuth: getCurrentUser resolved with user: null
+index-T6W0CdtP.js:64 useAuth: Auth state changed, user: null
+index-T6W0CdtP.js:64 Getting profile for user: 06a91bf8-7754-4f20-80bf-ec4a44999b66
+index-T6W0CdtP.js:64 Getting profile for user: 06a91bf8-7754-4f20-80bf-ec4a44999b66
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cstatus%2Corganization_id&user_id=eq.06a91bf8-7754-4f20-80bf-ec4a44999b66:1  Failed to load resource: the server responded with a status of 500 ()
+index-T6W0CdtP.js:64 Error loading profile: Object
+getCurrentUser @ index-T6W0CdtP.js:64
+index-T6W0CdtP.js:64 useAuth: Auth state changed, user: null
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cstatus%2Corganization_id&user_id=eq.06a91bf8-7754-4f20-80bf-ec4a44999b66:1  Failed to load resource: the server responded with a status of 500 ()
+index-T6W0CdtP.js:64 Error loading profile: Object
+getCurrentUser @ index-T6W0CdtP.js:64
+index-T6W0CdtP.js:64 useAuth: Auth state changed, user: null
