@@ -13,9 +13,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Get script directory (works with symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0" || realpath "$0")")" && pwd)"
+
 # Configuration
 APP_NAME="membership-system"
-TEMPLATE_FILE="nginx-custom-domain-template.conf"
+TEMPLATE_FILE="${SCRIPT_DIR}/nginx-custom-domain-template.conf"
 NGINX_SITES_AVAILABLE="/etc/nginx/sites-available"
 NGINX_SITES_ENABLED="/etc/nginx/sites-enabled"
 CERTBOT_WEBROOT="/var/www/certbot"
