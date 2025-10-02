@@ -352,6 +352,205 @@ export type Database = {
           updated_at?: string
         }
       }
+      badges: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          icon: string | null
+          color: string | null
+          badge_type: 'manual' | 'automatic' | 'milestone'
+          criteria: any | null
+          is_active: boolean
+          display_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          description?: string | null
+          icon?: string | null
+          color?: string | null
+          badge_type?: 'manual' | 'automatic' | 'milestone'
+          criteria?: any | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          description?: string | null
+          icon?: string | null
+          color?: string | null
+          badge_type?: 'manual' | 'automatic' | 'milestone'
+          criteria?: any | null
+          is_active?: boolean
+          display_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      member_badges: {
+        Row: {
+          id: string
+          profile_id: string
+          badge_id: string
+          awarded_at: string
+          awarded_by: string | null
+          notes: string | null
+          metadata: any | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          badge_id: string
+          awarded_at?: string
+          awarded_by?: string | null
+          notes?: string | null
+          metadata?: any | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          badge_id?: string
+          awarded_at?: string
+          awarded_by?: string | null
+          notes?: string | null
+          metadata?: any | null
+          created_at?: string
+        }
+      }
+      automated_reminders: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          reminder_type: 'membership_renewal' | 'membership_expiry' | 'event_upcoming' | 'event_followup' | 'custom'
+          trigger_days: number
+          email_subject: string
+          email_body: string
+          is_active: boolean
+          target_audience: any | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          description?: string | null
+          reminder_type: 'membership_renewal' | 'membership_expiry' | 'event_upcoming' | 'event_followup' | 'custom'
+          trigger_days: number
+          email_subject: string
+          email_body: string
+          is_active?: boolean
+          target_audience?: any | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          description?: string | null
+          reminder_type?: 'membership_renewal' | 'membership_expiry' | 'event_upcoming' | 'event_followup' | 'custom'
+          trigger_days?: number
+          email_subject?: string
+          email_body?: string
+          is_active?: boolean
+          target_audience?: any | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      reminder_logs: {
+        Row: {
+          id: string
+          reminder_id: string
+          profile_id: string
+          sent_at: string
+          status: 'sent' | 'failed' | 'bounced' | 'opened' | 'clicked'
+          error_message: string | null
+          metadata: any | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          reminder_id: string
+          profile_id: string
+          sent_at?: string
+          status?: 'sent' | 'failed' | 'bounced' | 'opened' | 'clicked'
+          error_message?: string | null
+          metadata?: any | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          reminder_id?: string
+          profile_id?: string
+          sent_at?: string
+          status?: 'sent' | 'failed' | 'bounced' | 'opened' | 'clicked'
+          error_message?: string | null
+          metadata?: any | null
+          created_at?: string
+        }
+      }
+      saved_reports: {
+        Row: {
+          id: string
+          organization_id: string
+          created_by: string
+          name: string
+          description: string | null
+          report_type: 'members' | 'memberships' | 'events' | 'committees' | 'financial' | 'custom'
+          filters: any
+          columns: any
+          sort_by: any | null
+          is_public: boolean
+          last_run_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          created_by: string
+          name: string
+          description?: string | null
+          report_type: 'members' | 'memberships' | 'events' | 'committees' | 'financial' | 'custom'
+          filters: any
+          columns: any
+          sort_by?: any | null
+          is_public?: boolean
+          last_run_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          created_by?: string
+          name?: string
+          description?: string | null
+          report_type?: 'members' | 'memberships' | 'events' | 'committees' | 'financial' | 'custom'
+          filters?: any
+          columns?: any
+          sort_by?: any | null
+          is_public?: boolean
+          last_run_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       subscribers: {
         Row: {
           id: string
