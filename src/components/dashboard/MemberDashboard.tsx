@@ -2955,7 +2955,7 @@ function CampaignsView({ organizationId }: CampaignsViewProps) {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>Resend Integration Required:</strong> To send email campaigns, set up the Resend integration from the Replit integrations panel. This will allow you to send professional emails to your subscribers.
+          <strong>Email Configuration:</strong> Email campaigns are sent using Resend. Make sure your RESEND_API_KEY is configured in your environment to enable sending campaigns to subscribers.
         </p>
       </div>
 
