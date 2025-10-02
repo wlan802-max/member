@@ -57,7 +57,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges' | 'admin-reminders'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges' | 'admin-reminders' | 'admin-reports'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
@@ -344,6 +344,17 @@ export function MemberDashboard() {
                   data-testid="tab-reminders"
                 >
                   Automated Reminders
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-reports')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-reports'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-custom-reports"
+                >
+                  Custom Reports
                 </button>
               </>
             )}
@@ -668,6 +679,11 @@ export function MemberDashboard() {
       {/* Admin - Automated Reminders View */}
       {activeView === 'admin-reminders' && isAdmin && organization && (
         <AdminRemindersView organizationId={organization.id} />
+      )}
+
+      {/* Admin - Custom Reports View */}
+      {activeView === 'admin-reports' && isAdmin && organization && user?.profile?.id && (
+        <CustomReportsView organizationId={organization.id} profileId={user.profile.id} />
       )}
 
       {/* Renewal Modal */}
@@ -7768,6 +7784,1031 @@ function ReminderLogsModal({ reminderId, reminderName, onClose }: ReminderLogsMo
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ============================================================================
+// CUSTOM REPORTS VIEW COMPONENT
+// ============================================================================
+
+interface CustomReportsViewProps {
+  organizationId: string;
+  profileId: string;
+}
+
+interface SavedReport {
+  id: string;
+  organization_id: string;
+  created_by: string;
+  name: string;
+  description: string | null;
+  report_type: 'members' | 'memberships' | 'events' | 'committees' | 'financial' | 'custom';
+  filters: any;
+  columns: any;
+  sort_by: any | null;
+  is_public: boolean;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+interface ReportFilter {
+  field: string;
+  operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'between' | 'in';
+  value: any;
+}
+
+function CustomReportsView({ organizationId, profileId }: CustomReportsViewProps) {
+  const [reports, setReports] = useState<SavedReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
+  const [reportResults, setReportResults] = useState<any[]>([]);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const RESULTS_PER_PAGE = 50;
+
+  // Form state for create/edit
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    report_type: 'members' as SavedReport['report_type'],
+    columns: [] as string[],
+    filters: [] as ReportFilter[],
+    sort_by: { field: '', direction: 'asc' as 'asc' | 'desc' },
+    is_public: false,
+  });
+
+  // Available columns for each report type
+  const REPORT_COLUMNS = {
+    members: ['first_name', 'last_name', 'email', 'phone', 'status', 'created_at', 'role'],
+    memberships: ['membership_type', 'status', 'start_date', 'end_date', 'amount_paid', 'membership_year'],
+    events: ['title', 'start_date', 'location', 'max_attendees', 'current_attendees', 'is_published'],
+    committees: ['name', 'member_count', 'is_active', 'created_at'],
+    financial: ['amount_paid', 'payment_date', 'payment_reference', 'membership_type', 'member_name'],
+    custom: [],
+  };
+
+  // Available filter fields for each report type
+  const FILTER_FIELDS = {
+    members: ['status', 'role', 'email', 'first_name', 'last_name', 'created_at'],
+    memberships: ['status', 'membership_type', 'membership_year', 'start_date', 'end_date'],
+    events: ['is_published', 'start_date', 'title', 'location'],
+    committees: ['is_active', 'name', 'member_count'],
+    financial: ['amount_paid', 'payment_date', 'membership_year'],
+    custom: [],
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, [organizationId, profileId]);
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('saved_reports')
+        .select('*, profiles:created_by(first_name, last_name)')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setReports(data || []);
+    } catch (error: any) {
+      console.error('Error fetching reports:', error);
+      toast.error('Failed to load reports', { description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateReport = async () => {
+    try {
+      if (!formData.name || formData.columns.length === 0) {
+        toast.error('Please provide a report name and select at least one column');
+        return;
+      }
+
+      const { error } = await supabase.from('saved_reports').insert({
+        organization_id: organizationId,
+        created_by: profileId,
+        name: formData.name,
+        description: formData.description || null,
+        report_type: formData.report_type,
+        filters: formData.filters,
+        columns: formData.columns,
+        sort_by: formData.sort_by.field ? formData.sort_by : null,
+        is_public: formData.is_public,
+      });
+
+      if (error) throw error;
+
+      toast.success('Report created successfully');
+      setShowCreateModal(false);
+      resetForm();
+      fetchReports();
+    } catch (error: any) {
+      console.error('Error creating report:', error);
+      toast.error('Failed to create report', { description: error.message });
+    }
+  };
+
+  const handleUpdateReport = async () => {
+    try {
+      if (!selectedReport || !formData.name || formData.columns.length === 0) {
+        toast.error('Please provide a report name and select at least one column');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('saved_reports')
+        .update({
+          name: formData.name,
+          description: formData.description || null,
+          report_type: formData.report_type,
+          filters: formData.filters,
+          columns: formData.columns,
+          sort_by: formData.sort_by.field ? formData.sort_by : null,
+          is_public: formData.is_public,
+        })
+        .eq('id', selectedReport.id);
+
+      if (error) throw error;
+
+      toast.success('Report updated successfully');
+      setShowEditModal(false);
+      setSelectedReport(null);
+      resetForm();
+      fetchReports();
+    } catch (error: any) {
+      console.error('Error updating report:', error);
+      toast.error('Failed to update report', { description: error.message });
+    }
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      if (!confirm('Are you sure you want to delete this report?')) return;
+
+      const { error } = await supabase.from('saved_reports').delete().eq('id', reportId);
+
+      if (error) throw error;
+
+      toast.success('Report deleted successfully');
+      fetchReports();
+    } catch (error: any) {
+      console.error('Error deleting report:', error);
+      toast.error('Failed to delete report', { description: error.message });
+    }
+  };
+
+  const handleDuplicateReport = async (report: SavedReport) => {
+    try {
+      const { error } = await supabase.from('saved_reports').insert({
+        organization_id: organizationId,
+        created_by: profileId,
+        name: `${report.name} (Copy)`,
+        description: report.description,
+        report_type: report.report_type,
+        filters: report.filters,
+        columns: report.columns,
+        sort_by: report.sort_by,
+        is_public: false,
+      });
+
+      if (error) throw error;
+
+      toast.success('Report duplicated successfully');
+      fetchReports();
+    } catch (error: any) {
+      console.error('Error duplicating report:', error);
+      toast.error('Failed to duplicate report', { description: error.message });
+    }
+  };
+
+  const handleRunReport = async (report: SavedReport) => {
+    try {
+      setResultsLoading(true);
+      setSelectedReport(report);
+      setShowResultsModal(true);
+      setCurrentPage(1);
+
+      // Update last_run_at
+      await supabase
+        .from('saved_reports')
+        .update({ last_run_at: new Date().toISOString() })
+        .eq('id', report.id);
+
+      // Fetch data based on report type
+      let query: any;
+      switch (report.report_type) {
+        case 'members':
+          query = supabase.from('profiles').select('*').eq('organization_id', organizationId);
+          break;
+        case 'memberships':
+          query = supabase
+            .from('memberships')
+            .select('*, profiles(first_name, last_name, email), membership_types(name)')
+            .eq('organization_id', organizationId);
+          break;
+        case 'events':
+          query = supabase.from('events').select('*').eq('organization_id', organizationId);
+          break;
+        case 'committees':
+          query = supabase.from('committees').select('*').eq('organization_id', organizationId);
+          break;
+        case 'financial':
+          query = supabase
+            .from('memberships')
+            .select('*, profiles(first_name, last_name, email)')
+            .eq('organization_id', organizationId)
+            .not('amount_paid', 'is', null);
+          break;
+        default:
+          query = supabase.from('profiles').select('*').eq('organization_id', organizationId);
+      }
+
+      // Apply filters
+      if (report.filters && Array.isArray(report.filters)) {
+        report.filters.forEach((filter: ReportFilter) => {
+          if (filter.field && filter.operator && filter.value !== undefined) {
+            switch (filter.operator) {
+              case 'equals':
+                query = query.eq(filter.field, filter.value);
+                break;
+              case 'not_equals':
+                query = query.neq(filter.field, filter.value);
+                break;
+              case 'contains':
+                query = query.ilike(filter.field, `%${filter.value}%`);
+                break;
+              case 'greater_than':
+                query = query.gt(filter.field, filter.value);
+                break;
+              case 'less_than':
+                query = query.lt(filter.field, filter.value);
+                break;
+              case 'in':
+                query = query.in(filter.field, Array.isArray(filter.value) ? filter.value : [filter.value]);
+                break;
+            }
+          }
+        });
+      }
+
+      // Apply sorting
+      if (report.sort_by && report.sort_by.field) {
+        query = query.order(report.sort_by.field, { ascending: report.sort_by.direction === 'asc' });
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setReportResults(data || []);
+      setTotalResults(data?.length || 0);
+    } catch (error: any) {
+      console.error('Error running report:', error);
+      toast.error('Failed to run report', { description: error.message });
+      setShowResultsModal(false);
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (!selectedReport || reportResults.length === 0) return;
+
+    try {
+      const columns = selectedReport.columns as string[];
+      const headers = columns.join(',');
+      const rows = reportResults.map((row) =>
+        columns
+          .map((col) => {
+            let value = row[col];
+            // Handle nested objects (e.g., profiles.first_name)
+            if (col.includes('.')) {
+              const parts = col.split('.');
+              value = row[parts[0]]?.[parts[1]];
+            }
+            // Handle arrays
+            if (Array.isArray(value)) {
+              value = value.join('; ');
+            }
+            // Escape commas and quotes
+            if (typeof value === 'string') {
+              value = `"${value.replace(/"/g, '""')}"`;
+            }
+            return value || '';
+          })
+          .join(',')
+      );
+
+      const csv = [headers, ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${selectedReport.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      link.click();
+
+      toast.success('Report exported successfully');
+    } catch (error: any) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Failed to export report', { description: error.message });
+    }
+  };
+
+  const openEditModal = (report: SavedReport) => {
+    setSelectedReport(report);
+    setFormData({
+      name: report.name,
+      description: report.description || '',
+      report_type: report.report_type,
+      columns: Array.isArray(report.columns) ? report.columns : [],
+      filters: Array.isArray(report.filters) ? report.filters : [],
+      sort_by: report.sort_by || { field: '', direction: 'asc' },
+      is_public: report.is_public,
+    });
+    setShowEditModal(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      report_type: 'members',
+      columns: [],
+      filters: [],
+      sort_by: { field: '', direction: 'asc' },
+      is_public: false,
+    });
+  };
+
+  const addFilter = () => {
+    setFormData({
+      ...formData,
+      filters: [...formData.filters, { field: '', operator: 'equals', value: '' }],
+    });
+  };
+
+  const removeFilter = (index: number) => {
+    setFormData({
+      ...formData,
+      filters: formData.filters.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateFilter = (index: number, key: keyof ReportFilter, value: any) => {
+    const newFilters = [...formData.filters];
+    newFilters[index] = { ...newFilters[index], [key]: value };
+    setFormData({ ...formData, filters: newFilters });
+  };
+
+  const toggleColumn = (column: string) => {
+    if (formData.columns.includes(column)) {
+      setFormData({ ...formData, columns: formData.columns.filter((c) => c !== column) });
+    } else {
+      setFormData({ ...formData, columns: [...formData.columns, column] });
+    }
+  };
+
+  // Calculate stats
+  const stats = {
+    total: reports.length,
+    public: reports.filter((r) => r.is_public).length,
+    mine: reports.filter((r) => r.created_by === profileId).length,
+  };
+
+  const paginatedResults = reportResults.slice(
+    (currentPage - 1) * RESULTS_PER_PAGE,
+    currentPage * RESULTS_PER_PAGE
+  );
+  const totalPages = Math.ceil(totalResults / RESULTS_PER_PAGE);
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Total Saved Reports</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2" data-testid="stat-total-reports">
+              {stats.total}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Public Reports</p>
+            <p className="text-3xl font-bold text-blue-600 mt-2" data-testid="stat-public-reports">
+              {stats.public}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">My Reports</p>
+            <p className="text-3xl font-bold text-green-600 mt-2" data-testid="stat-my-reports">
+              {stats.mine}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Header with Create Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900" data-testid="heading-reports">
+            Custom Reports
+          </h2>
+          <p className="text-gray-600 mt-1">Create and manage custom data reports</p>
+        </div>
+        <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-report">
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Report
+        </Button>
+      </div>
+
+      {/* Reports List */}
+      {loading ? (
+        <div className="text-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+        </div>
+      ) : reports.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <p className="text-gray-500">No reports found. Create your first report to get started.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {reports.map((report) => (
+            <Card key={report.id} data-testid={`report-card-${report.id}`}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900" data-testid={`report-name-${report.id}`}>
+                        {report.name}
+                      </h3>
+                      <Badge variant="outline" data-testid={`report-type-${report.id}`}>
+                        {report.report_type}
+                      </Badge>
+                      {report.is_public && (
+                        <Badge variant="default" data-testid={`report-public-badge-${report.id}`}>
+                          Public
+                        </Badge>
+                      )}
+                    </div>
+                    {report.description && (
+                      <p className="text-sm text-gray-600 mb-3" data-testid={`report-description-${report.id}`}>
+                        {report.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span data-testid={`report-creator-${report.id}`}>
+                        Created by: {report.profiles?.first_name} {report.profiles?.last_name}
+                      </span>
+                      {report.last_run_at && (
+                        <span data-testid={`report-last-run-${report.id}`}>
+                          Last run: {format(new Date(report.last_run_at), 'PPp')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      size="sm"
+                      onClick={() => handleRunReport(report)}
+                      data-testid={`button-run-${report.id}`}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Run
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditModal(report)}
+                      data-testid={`button-edit-${report.id}`}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDuplicateReport(report)}
+                      data-testid={`button-duplicate-${report.id}`}
+                    >
+                      Duplicate
+                    </Button>
+                    {report.created_by === profileId && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteReport(report.id)}
+                        data-testid={`button-delete-${report.id}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Create Report Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Create New Report</CardTitle>
+              <CardDescription>Configure your custom report</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Report Name *</label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter report name"
+                  data-testid="input-report-name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter report description"
+                  data-testid="input-report-description"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Report Type *</label>
+                <select
+                  value={formData.report_type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, report_type: e.target.value as SavedReport['report_type'], columns: [] })
+                  }
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  data-testid="select-report-type"
+                >
+                  <option value="members">Members</option>
+                  <option value="memberships">Memberships</option>
+                  <option value="events">Events</option>
+                  <option value="committees">Committees</option>
+                  <option value="financial">Financial</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Columns to Include *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {REPORT_COLUMNS[formData.report_type].map((column) => (
+                    <label key={column} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.columns.includes(column)}
+                        onChange={() => toggleColumn(column)}
+                        data-testid={`checkbox-column-${column}`}
+                      />
+                      <span className="text-sm">{column.replace(/_/g, ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Filters</label>
+                  <Button size="sm" variant="outline" onClick={addFilter} data-testid="button-add-filter">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Filter
+                  </Button>
+                </div>
+                {formData.filters.map((filter, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-2" data-testid={`filter-row-${index}`}>
+                    <select
+                      value={filter.field}
+                      onChange={(e) => updateFilter(index, 'field', e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                      data-testid={`select-filter-field-${index}`}
+                    >
+                      <option value="">Select field</option>
+                      {FILTER_FIELDS[formData.report_type].map((field) => (
+                        <option key={field} value={field}>
+                          {field.replace(/_/g, ' ')}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={filter.operator}
+                      onChange={(e) => updateFilter(index, 'operator', e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                      data-testid={`select-filter-operator-${index}`}
+                    >
+                      <option value="equals">Equals</option>
+                      <option value="not_equals">Not Equals</option>
+                      <option value="contains">Contains</option>
+                      <option value="greater_than">Greater Than</option>
+                      <option value="less_than">Less Than</option>
+                      <option value="in">In</option>
+                    </select>
+                    <Input
+                      value={filter.value}
+                      onChange={(e) => updateFilter(index, 'value', e.target.value)}
+                      placeholder="Value"
+                      className="flex-1"
+                      data-testid={`input-filter-value-${index}`}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeFilter(index)}
+                      data-testid={`button-remove-filter-${index}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={formData.sort_by.field}
+                    onChange={(e) => setFormData({ ...formData, sort_by: { ...formData.sort_by, field: e.target.value } })}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                    data-testid="select-sort-field"
+                  >
+                    <option value="">No sorting</option>
+                    {REPORT_COLUMNS[formData.report_type].map((column) => (
+                      <option key={column} value={column}>
+                        {column.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={formData.sort_by.direction}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sort_by: { ...formData.sort_by, direction: e.target.value as 'asc' | 'desc' } })
+                    }
+                    className="border border-gray-300 rounded-md px-3 py-2"
+                    data-testid="select-sort-direction"
+                  >
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_public}
+                    onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
+                    data-testid="checkbox-public-report"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Public Report (visible to all admins)</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    resetForm();
+                  }}
+                  data-testid="button-cancel-create"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateReport} data-testid="button-save-report">
+                  Save Report
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Report Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Edit Report</CardTitle>
+              <CardDescription>Update your report configuration</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Report Name *</label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter report name"
+                  data-testid="input-edit-report-name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter report description"
+                  data-testid="input-edit-report-description"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Report Type *</label>
+                <select
+                  value={formData.report_type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, report_type: e.target.value as SavedReport['report_type'], columns: [] })
+                  }
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  data-testid="select-edit-report-type"
+                >
+                  <option value="members">Members</option>
+                  <option value="memberships">Memberships</option>
+                  <option value="events">Events</option>
+                  <option value="committees">Committees</option>
+                  <option value="financial">Financial</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Columns to Include *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {REPORT_COLUMNS[formData.report_type].map((column) => (
+                    <label key={column} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.columns.includes(column)}
+                        onChange={() => toggleColumn(column)}
+                        data-testid={`checkbox-edit-column-${column}`}
+                      />
+                      <span className="text-sm">{column.replace(/_/g, ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Filters</label>
+                  <Button size="sm" variant="outline" onClick={addFilter} data-testid="button-edit-add-filter">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Filter
+                  </Button>
+                </div>
+                {formData.filters.map((filter, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-2" data-testid={`edit-filter-row-${index}`}>
+                    <select
+                      value={filter.field}
+                      onChange={(e) => updateFilter(index, 'field', e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                      data-testid={`select-edit-filter-field-${index}`}
+                    >
+                      <option value="">Select field</option>
+                      {FILTER_FIELDS[formData.report_type].map((field) => (
+                        <option key={field} value={field}>
+                          {field.replace(/_/g, ' ')}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={filter.operator}
+                      onChange={(e) => updateFilter(index, 'operator', e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                      data-testid={`select-edit-filter-operator-${index}`}
+                    >
+                      <option value="equals">Equals</option>
+                      <option value="not_equals">Not Equals</option>
+                      <option value="contains">Contains</option>
+                      <option value="greater_than">Greater Than</option>
+                      <option value="less_than">Less Than</option>
+                      <option value="in">In</option>
+                    </select>
+                    <Input
+                      value={filter.value}
+                      onChange={(e) => updateFilter(index, 'value', e.target.value)}
+                      placeholder="Value"
+                      className="flex-1"
+                      data-testid={`input-edit-filter-value-${index}`}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeFilter(index)}
+                      data-testid={`button-edit-remove-filter-${index}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={formData.sort_by.field}
+                    onChange={(e) => setFormData({ ...formData, sort_by: { ...formData.sort_by, field: e.target.value } })}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                    data-testid="select-edit-sort-field"
+                  >
+                    <option value="">No sorting</option>
+                    {REPORT_COLUMNS[formData.report_type].map((column) => (
+                      <option key={column} value={column}>
+                        {column.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={formData.sort_by.direction}
+                    onChange={(e) =>
+                      setFormData({ ...formData, sort_by: { ...formData.sort_by, direction: e.target.value as 'asc' | 'desc' } })
+                    }
+                    className="border border-gray-300 rounded-md px-3 py-2"
+                    data-testid="select-edit-sort-direction"
+                  >
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_public}
+                    onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
+                    data-testid="checkbox-edit-public-report"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Public Report (visible to all admins)</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedReport(null);
+                    resetForm();
+                  }}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateReport} data-testid="button-update-report">
+                  Update Report
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Results Modal */}
+      {showResultsModal && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{selectedReport.name} - Results</CardTitle>
+                  <CardDescription>
+                    Total Results: {totalResults} | Page {currentPage} of {totalPages}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleExportCSV}
+                    disabled={reportResults.length === 0}
+                    data-testid="button-export-csv"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowResultsModal(false)} data-testid="button-close-results">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {resultsLoading ? (
+                <div className="text-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+                </div>
+              ) : reportResults.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">No results found</div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full" data-testid="table-results">
+                      <thead>
+                        <tr className="border-b">
+                          {(selectedReport.columns as string[]).map((column) => (
+                            <th key={column} className="text-left py-3 px-4 font-medium text-gray-600">
+                              {column.replace(/_/g, ' ')}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedResults.map((row, rowIndex) => (
+                          <tr key={rowIndex} className="border-b hover:bg-gray-50" data-testid={`result-row-${rowIndex}`}>
+                            {(selectedReport.columns as string[]).map((column, colIndex) => {
+                              let value = row[column];
+                              // Handle nested objects
+                              if (column.includes('.')) {
+                                const parts = column.split('.');
+                                value = row[parts[0]]?.[parts[1]];
+                              }
+                              // Handle dates
+                              if (
+                                typeof value === 'string' &&
+                                (column.includes('date') || column.includes('_at')) &&
+                                !isNaN(Date.parse(value))
+                              ) {
+                                value = format(new Date(value), 'PP');
+                              }
+                              // Handle arrays
+                              if (Array.isArray(value)) {
+                                value = value.join(', ');
+                              }
+
+                              return (
+                                <td
+                                  key={colIndex}
+                                  className="py-3 px-4"
+                                  data-testid={`result-cell-${rowIndex}-${colIndex}`}
+                                >
+                                  {value || '-'}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <Button
+                        variant="outline"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        data-testid="button-prev-page"
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-gray-600" data-testid="text-page-info">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        data-testid="button-next-page"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
