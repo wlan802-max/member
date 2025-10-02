@@ -835,15 +835,44 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
     secondary_color: organization.secondary_color || '#1E40AF',
     membership_year_start_month: organization.membership_year_start_month || 1,
     membership_year_end_month: organization.membership_year_end_month || 12,
-    renewal_enabled: organization.renewal_enabled !== undefined ? organization.renewal_enabled : true
+    renewal_enabled: organization.renewal_enabled !== undefined ? organization.renewal_enabled : true,
+    renewal_form_schema_id: organization.renewal_form_schema_id || null
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [availableForms, setAvailableForms] = useState<Array<{id: string, title: string, form_type: string}>>([]);
+  const [loadingForms, setLoadingForms] = useState(true);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  // Load available forms for renewal
+  useEffect(() => {
+    const loadForms = async () => {
+      try {
+        setLoadingForms(true);
+        const { data, error } = await supabase
+          .from('organization_form_schemas')
+          .select('id, title, form_type')
+          .eq('organization_id', organization.id)
+          .in('form_type', ['renewal', 'both'])
+          .eq('is_active', true)
+          .order('title');
+
+        if (error) throw error;
+        setAvailableForms(data || []);
+      } catch (error) {
+        console.error('Error loading forms:', error);
+        toast.error('Failed to load renewal forms. Please refresh the page.');
+      } finally {
+        setLoadingForms(false);
+      }
+    };
+
+    loadForms();
+  }, [organization.id]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -861,6 +890,7 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
           membership_year_start_month: formData.membership_year_start_month,
           membership_year_end_month: formData.membership_year_end_month,
           renewal_enabled: formData.renewal_enabled,
+          renewal_form_schema_id: formData.renewal_form_schema_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', organization.id);
@@ -1010,8 +1040,41 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
               </label>
             </div>
             <p className="text-xs text-gray-500 ml-8">
-              When enabled, members will see a "Renew Membership" button on their dashboard. You can configure the renewal form in the "Signup Forms" tab.
+              When enabled, members will see a "Renew Membership" button on their dashboard.
             </p>
+
+            {formData.renewal_enabled && (
+              <div className="ml-8 space-y-2">
+                <label htmlFor="renewal-form" className="text-sm font-medium">
+                  Renewal Form
+                </label>
+                <select
+                  id="renewal-form"
+                  value={formData.renewal_form_schema_id || ''}
+                  onChange={(e) => setFormData({ ...formData, renewal_form_schema_id: e.target.value || null })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={loadingForms}
+                  data-testid="select-renewal-form"
+                >
+                  <option value="">Use default signup form</option>
+                  {loadingForms ? (
+                    <option disabled>Loading forms...</option>
+                  ) : availableForms.length === 0 ? (
+                    <option disabled>No renewal forms available - create one in "Signup Forms"</option>
+                  ) : (
+                    availableForms.map((form) => (
+                      <option key={form.id} value={form.id}>
+                        {form.title} ({form.form_type === 'both' ? 'Signup & Renewal' : 'Renewal Only'})
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="text-xs text-gray-500">
+                  Select a specific form for renewals, or leave blank to use your signup form. 
+                  Create renewal forms in the "Signup Forms" tab with form type "Renewal" or "Both".
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
