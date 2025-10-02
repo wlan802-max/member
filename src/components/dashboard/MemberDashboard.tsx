@@ -23,7 +23,10 @@ import {
   X,
   Loader2,
   Users,
-  UserPlus
+  UserPlus,
+  FileText,
+  Edit2,
+  Trash2
 } from 'lucide-react'
 import { FormBuilder } from '@/components/admin/FormBuilder'
 import { MembershipTypesEditor } from '@/components/admin/MembershipTypesEditor'
@@ -1054,6 +1057,8 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
   const [showEditMember, setShowEditMember] = useState(false);
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [selectedMemberForNotes, setSelectedMemberForNotes] = useState<any | null>(null);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -1269,6 +1274,18 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
                     size="sm" 
                     variant="outline"
                     onClick={() => {
+                      setSelectedMemberForNotes(member);
+                      setShowNotesModal(true);
+                    }}
+                    data-testid={`button-view-notes-${member.id}`}
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    Notes
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
                       setSelectedMember(member);
                       setShowEditMember(true);
                     }}
@@ -1313,6 +1330,18 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedMemberForNotes(user);
+                      setShowNotesModal(true);
+                    }}
+                    data-testid={`button-view-notes-${user.id}`}
+                  >
+                    <FileText className="h-4 w-4 mr-1" />
+                    Notes
+                  </Button>
                   <Button 
                     size="sm" 
                     variant="default"
@@ -1372,6 +1401,17 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
             setShowEditMember(false);
             setSelectedMember(null);
             fetchMembers();
+          }}
+        />
+      )}
+
+      {showNotesModal && selectedMemberForNotes && (
+        <MemberNotesModal
+          member={selectedMemberForNotes}
+          organizationId={organizationId}
+          onClose={() => {
+            setShowNotesModal(false);
+            setSelectedMemberForNotes(null);
           }}
         />
       )}
@@ -2478,6 +2518,372 @@ function EditMemberModal({ member, onClose, onSuccess }: EditMemberModalProps) {
     </div>
   );
 }
+
+// Member Notes Modal
+interface MemberNotesModalProps {
+  member: any;
+  organizationId: string;
+  onClose: () => void;
+}
+
+interface MemberNote {
+  id: string;
+  profile_id: string;
+  created_by: string;
+  note: string;
+  note_type: 'general' | 'admin' | 'support' | 'payment' | 'behavior';
+  is_private: boolean;
+  created_at: string;
+  updated_at: string;
+  creator?: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+function MemberNotesModal({ member, organizationId, onClose }: MemberNotesModalProps) {
+  const { user } = useAuth();
+  const [notes, setNotes] = useState<MemberNote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteForm, setNoteForm] = useState({
+    note: '',
+    note_type: 'general' as 'general' | 'admin' | 'support' | 'payment' | 'behavior',
+    is_private: true
+  });
+
+  const noteTypeColors = {
+    general: 'bg-gray-100 text-gray-800',
+    admin: 'bg-blue-100 text-blue-800',
+    support: 'bg-green-100 text-green-800',
+    payment: 'bg-yellow-100 text-yellow-800',
+    behavior: 'bg-red-100 text-red-800'
+  };
+
+  useEffect(() => {
+    fetchNotes();
+  }, [member.id]);
+
+  const fetchNotes = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('member_notes')
+        .select(`
+          *,
+          creator:profiles!created_by(first_name, last_name)
+        `)
+        .eq('profile_id', member.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotes(data || []);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+      toast.error('Failed to load notes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!noteForm.note.trim()) {
+      toast.error('Please enter a note');
+      return;
+    }
+
+    if (noteForm.note.length > 1000) {
+      toast.error('Note is too long (max 1000 characters)');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('member_notes')
+        .insert({
+          profile_id: member.id,
+          created_by: user?.profile?.id,
+          note: noteForm.note.trim(),
+          note_type: noteForm.note_type,
+          is_private: noteForm.is_private
+        });
+
+      if (error) throw error;
+
+      toast.success('Note added successfully');
+      setNoteForm({ note: '', note_type: 'general', is_private: true });
+      await fetchNotes();
+    } catch (error) {
+      console.error('Error adding note:', error);
+      toast.error('Failed to add note');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditNote = async (noteId: string, updatedNote: string) => {
+    if (!updatedNote.trim()) {
+      toast.error('Note cannot be empty');
+      return;
+    }
+
+    if (updatedNote.length > 1000) {
+      toast.error('Note is too long (max 1000 characters)');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('member_notes')
+        .update({
+          note: updatedNote.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', noteId)
+        .eq('created_by', user?.profile?.id);
+
+      if (error) throw error;
+
+      toast.success('Note updated successfully');
+      setEditingNoteId(null);
+      await fetchNotes();
+    } catch (error) {
+      console.error('Error updating note:', error);
+      toast.error('Failed to update note');
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('member_notes')
+        .delete()
+        .eq('id', noteId)
+        .eq('created_by', user?.profile?.id);
+
+      if (error) throw error;
+
+      toast.success('Note deleted successfully');
+      await fetchNotes();
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      toast.error('Failed to delete note');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="modal-member-notes" onClick={onClose}>
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <CardHeader className="border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Notes & History
+              </CardTitle>
+              <CardDescription>
+                Notes for {member.first_name} {member.last_name}
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={onClose} data-testid="button-close-notes">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Add Note Form */}
+          <form onSubmit={handleAddNote} className="space-y-4 p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-medium text-sm">Add New Note</h3>
+            
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Note Type</label>
+              <select
+                value={noteForm.note_type}
+                onChange={(e) => setNoteForm({ ...noteForm, note_type: e.target.value as any })}
+                className="w-full p-2 border rounded"
+                data-testid="select-note-type"
+              >
+                <option value="general">General</option>
+                <option value="admin">Admin</option>
+                <option value="support">Support</option>
+                <option value="payment">Payment</option>
+                <option value="behavior">Behavior</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Note Content</label>
+              <Textarea
+                value={noteForm.note}
+                onChange={(e) => setNoteForm({ ...noteForm, note: e.target.value })}
+                placeholder="Enter note here..."
+                rows={4}
+                className="w-full"
+                data-testid="textarea-note-content"
+              />
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs text-gray-500">
+                  {noteForm.note.length}/1000 characters
+                </span>
+                {noteForm.note.length > 1000 && (
+                  <span className="text-xs text-red-500">Character limit exceeded</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is-private"
+                checked={noteForm.is_private}
+                onChange={(e) => setNoteForm({ ...noteForm, is_private: e.target.checked })}
+                data-testid="checkbox-is-private"
+              />
+              <label htmlFor="is-private" className="text-sm text-gray-700">
+                Private (admin only visibility)
+              </label>
+            </div>
+
+            <Button 
+              type="submit" 
+              disabled={saving || !noteForm.note.trim() || noteForm.note.length > 1000}
+              data-testid="button-add-note"
+              className="w-full"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding Note...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Note
+                </>
+              )}
+            </Button>
+          </form>
+
+          {/* Notes List */}
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm">Note History</h3>
+            
+            {loading ? (
+              <div className="text-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
+                <p className="text-sm text-gray-500 mt-2">Loading notes...</p>
+              </div>
+            ) : notes.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg" data-testid="empty-notes">
+                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                <p className="text-gray-500">No notes yet</p>
+                <p className="text-sm text-gray-400">Add a note to keep track of member information</p>
+              </div>
+            ) : (
+              notes.map((note) => (
+                <Card key={note.id} className="p-4" data-testid={`note-card-${note.id}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge className={noteTypeColors[note.note_type]} data-testid={`badge-note-type-${note.id}`}>
+                        {note.note_type}
+                      </Badge>
+                      {note.is_private && (
+                        <Badge variant="outline" className="text-xs">Private</Badge>
+                      )}
+                    </div>
+                    {note.created_by === user?.profile?.id && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingNoteId(note.id === editingNoteId ? null : note.id)}
+                          data-testid={`button-edit-note-${note.id}`}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteNote(note.id)}
+                          data-testid={`button-delete-note-${note.id}`}
+                        >
+                          <Trash2 className="h-3 w-3 text-red-600" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {editingNoteId === note.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        defaultValue={note.note}
+                        id={`edit-note-${note.id}`}
+                        rows={3}
+                        className="w-full"
+                        data-testid={`textarea-edit-note-${note.id}`}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const textarea = document.getElementById(`edit-note-${note.id}`) as HTMLTextAreaElement;
+                            handleEditNote(note.id, textarea.value);
+                          }}
+                          data-testid={`button-save-edit-${note.id}`}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingNoteId(null)}
+                          data-testid={`button-cancel-edit-${note.id}`}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap" data-testid={`text-note-content-${note.id}`}>
+                      {note.note}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
+                    <User className="h-3 w-3" />
+                    <span data-testid={`text-note-creator-${note.id}`}>
+                      {note.creator ? `${note.creator.first_name} ${note.creator.last_name}` : 'Unknown'}
+                    </span>
+                    <span>•</span>
+                    <Clock className="h-3 w-3" />
+                    <span data-testid={`text-note-date-${note.id}`}>
+                      {format(new Date(note.created_at), 'PPp')}
+                    </span>
+                    {note.updated_at !== note.created_at && (
+                      <>
+                        <span>•</span>
+                        <span className="italic">edited</span>
+                      </>
+                    )}
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // Profile View Component
 interface ProfileViewProps {
   user: any;
