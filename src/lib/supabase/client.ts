@@ -21,6 +21,10 @@ export type Database = {
           contact_phone: string | null
           address: any | null
           settings: any
+          membership_year_start_month: number
+          membership_year_end_month: number
+          renewal_enabled: boolean
+          renewal_form_schema_id: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -37,6 +41,10 @@ export type Database = {
           contact_phone?: string | null
           address?: any | null
           settings?: any
+          membership_year_start_month?: number
+          membership_year_end_month?: number
+          renewal_enabled?: boolean
+          renewal_form_schema_id?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -53,6 +61,10 @@ export type Database = {
           contact_phone?: string | null
           address?: any | null
           settings?: any
+          membership_year_start_month?: number
+          membership_year_end_month?: number
+          renewal_enabled?: boolean
+          renewal_form_schema_id?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -360,6 +372,7 @@ export type Database = {
           title: string
           description: string | null
           schema_data: any
+          form_type: 'signup' | 'renewal' | 'both'
           is_active: boolean
           created_at: string
           created_by: string | null
@@ -372,6 +385,7 @@ export type Database = {
           title?: string
           description?: string | null
           schema_data: any
+          form_type?: 'signup' | 'renewal' | 'both'
           is_active?: boolean
           created_at?: string
           created_by?: string | null
@@ -384,9 +398,57 @@ export type Database = {
           title?: string
           description?: string | null
           schema_data?: any
+          form_type?: 'signup' | 'renewal' | 'both'
           is_active?: boolean
           created_at?: string
           created_by?: string | null
+          updated_at?: string
+        }
+      }
+      email_workflows: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          trigger_event: 'signup' | 'renewal' | 'both'
+          conditions: any
+          recipient_email: string
+          recipient_name: string | null
+          email_subject: string
+          email_template: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          description?: string | null
+          trigger_event: 'signup' | 'renewal' | 'both'
+          conditions?: any
+          recipient_email: string
+          recipient_name?: string | null
+          email_subject: string
+          email_template: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          description?: string | null
+          trigger_event?: 'signup' | 'renewal' | 'both'
+          conditions?: any
+          recipient_email?: string
+          recipient_name?: string | null
+          email_subject?: string
+          email_template?: string
+          is_active?: boolean
+          created_at?: string
           updated_at?: string
         }
       }

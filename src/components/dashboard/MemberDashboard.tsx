@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { FormBuilder } from '@/components/admin/FormBuilder'
 import { MembershipTypesEditor } from '@/components/admin/MembershipTypesEditor'
+import { EmailWorkflowsManager } from '@/components/admin/EmailWorkflowsManager'
 
 // Utility function for date formatting
 const formatDate = (dateString: string) => {
@@ -48,7 +49,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows'>('dashboard')
 
   useEffect(() => {
     // Check URL hash for navigation
@@ -235,6 +236,17 @@ export function MemberDashboard() {
                   data-testid="tab-forms"
                 >
                   Signup Forms
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-workflows')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-workflows'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-workflows"
+                >
+                  Email Workflows
                 </button>
               </>
             )}
@@ -509,6 +521,11 @@ export function MemberDashboard() {
       {/* Admin - Signup Forms View */}
       {activeView === 'admin-forms' && isAdmin && organization && (
         <FormBuilder organizationId={organization.id} />
+      )}
+
+      {/* Admin - Email Workflows View */}
+      {activeView === 'admin-workflows' && isAdmin && organization && (
+        <EmailWorkflowsManager organizationId={organization.id} />
       )}
     </div>
   )
@@ -815,10 +832,18 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
     contact_email: organization.contact_email || '',
     contact_phone: organization.contact_phone || '',
     primary_color: organization.primary_color || '#3B82F6',
-    secondary_color: organization.secondary_color || '#1E40AF'
+    secondary_color: organization.secondary_color || '#1E40AF',
+    membership_year_start_month: organization.membership_year_start_month || 1,
+    membership_year_end_month: organization.membership_year_end_month || 12,
+    renewal_enabled: organization.renewal_enabled !== undefined ? organization.renewal_enabled : true
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   const handleSave = async () => {
     setSaving(true);
@@ -833,6 +858,9 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
           contact_phone: formData.contact_phone,
           primary_color: formData.primary_color,
           secondary_color: formData.secondary_color,
+          membership_year_start_month: formData.membership_year_start_month,
+          membership_year_end_month: formData.membership_year_end_month,
+          renewal_enabled: formData.renewal_enabled,
           updated_at: new Date().toISOString()
         })
         .eq('id', organization.id);
@@ -919,7 +947,75 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
           </div>
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="pt-6 border-t">
+          <h3 className="text-lg font-semibold mb-4">Membership Year Configuration</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Membership Year Starts</label>
+                <select
+                  value={formData.membership_year_start_month}
+                  onChange={(e) => setFormData({ ...formData, membership_year_start_month: parseInt(e.target.value) })}
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  data-testid="select-year-start-month"
+                >
+                  {monthNames.map((month, index) => (
+                    <option key={index + 1} value={index + 1}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">When does your membership year begin?</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Membership Year Ends</label>
+                <select
+                  value={formData.membership_year_end_month}
+                  onChange={(e) => setFormData({ ...formData, membership_year_end_month: parseInt(e.target.value) })}
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  data-testid="select-year-end-month"
+                >
+                  {monthNames.map((month, index) => (
+                    <option key={index + 1} value={index + 1}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">When does your membership year end?</p>
+              </div>
+            </div>
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-900">
+                Example: If your membership year runs from <strong>{monthNames[formData.membership_year_start_month - 1]}</strong> to <strong>{monthNames[formData.membership_year_end_month - 1]}</strong>,
+                new members signing up will automatically be added to the current membership year.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-6 border-t">
+          <h3 className="text-lg font-semibold mb-4">Renewal Settings</h3>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="renewal-enabled"
+                checked={formData.renewal_enabled}
+                onChange={(e) => setFormData({ ...formData, renewal_enabled: e.target.checked })}
+                className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                data-testid="checkbox-renewal-enabled"
+              />
+              <label htmlFor="renewal-enabled" className="text-sm font-medium">
+                Enable Membership Renewal
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 ml-8">
+              When enabled, members will see a "Renew Membership" button on their dashboard. You can configure the renewal form in the "Signup Forms" tab.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-6">
           <Button onClick={handleSave} disabled={saving} data-testid="button-save-settings">
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
