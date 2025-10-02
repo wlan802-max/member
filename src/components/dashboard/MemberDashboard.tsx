@@ -58,7 +58,7 @@ export function MemberDashboard() {
   const { organization } = useTenant()
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges' | 'admin-reminders' | 'admin-reports'>('dashboard')
+  const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'subscriptions' | 'committees' | 'badges' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows' | 'admin-event-registrations' | 'admin-committees' | 'admin-analytics' | 'admin-badges' | 'admin-reminders' | 'admin-reports' | 'admin-email-templates'>('dashboard')
   const [showRenewalModal, setShowRenewalModal] = useState(false)
   const [exportingMemberships, setExportingMemberships] = useState(false)
 
@@ -322,6 +322,17 @@ export function MemberDashboard() {
                   data-testid="tab-workflows"
                 >
                   Email Workflows
+                </button>
+                <button
+                  onClick={() => setActiveView('admin-email-templates')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
+                    activeView === 'admin-email-templates'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  data-testid="tab-email-templates"
+                >
+                  Email Templates
                 </button>
                 <button
                   onClick={() => setActiveView('admin-event-registrations')}
@@ -734,6 +745,11 @@ export function MemberDashboard() {
       {/* Admin - Custom Reports View */}
       {activeView === 'admin-reports' && isAdmin && organization && user?.profile?.id && (
         <CustomReportsView organizationId={organization.id} profileId={user.profile.id} />
+      )}
+
+      {/* Admin - Email Templates View */}
+      {activeView === 'admin-email-templates' && isAdmin && organization && user?.profile?.id && (
+        <EmailTemplatesView organizationId={organization.id} profileId={user.profile.id} />
       )}
 
       {/* Renewal Modal */}
@@ -8029,6 +8045,884 @@ function ReminderLogsModal({ reminderId, reminderName, onClose }: ReminderLogsMo
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ============================================================================
+// EMAIL TEMPLATES VIEW COMPONENT
+// ============================================================================
+
+interface EmailTemplatesViewProps {
+  organizationId: string;
+  profileId: string;
+}
+
+interface EmailTemplate {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  subject: string;
+  body: string;
+  template_type: 'welcome' | 'renewal' | 'expiry' | 'event' | 'newsletter' | 'custom';
+  variables: any | null;
+  is_active: boolean;
+  is_default: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+const DEFAULT_TEMPLATES = [
+  {
+    name: 'Welcome Email',
+    template_type: 'welcome' as const,
+    description: 'Welcome new members to the organization',
+    subject: 'Welcome to {{organization_name}}!',
+    body: `Dear {{first_name}} {{last_name}},
+
+Welcome to {{organization_name}}! We're thrilled to have you as a member.
+
+Your membership details:
+- Type: {{membership_type}}
+- Valid until: {{expiry_date}}
+
+If you have any questions, please don't hesitate to contact us.
+
+Best regards,
+{{organization_name}} Team`,
+    is_active: true,
+    is_default: true,
+  },
+  {
+    name: 'Membership Renewal',
+    template_type: 'renewal' as const,
+    description: 'Remind members to renew their membership',
+    subject: 'Time to Renew Your Membership with {{organization_name}}',
+    body: `Dear {{first_name}} {{last_name}},
+
+It's time to renew your {{membership_type}} membership with {{organization_name}}.
+
+Your current membership expires on {{expiry_date}}.
+
+Please renew your membership to continue enjoying all the benefits.
+
+Best regards,
+{{organization_name}} Team`,
+    is_active: true,
+    is_default: true,
+  },
+  {
+    name: 'Membership Expiry Warning',
+    template_type: 'expiry' as const,
+    description: 'Warning email for expiring memberships',
+    subject: 'Your Membership is Expiring Soon',
+    body: `Dear {{first_name}} {{last_name}},
+
+This is a reminder that your {{membership_type}} membership will expire on {{expiry_date}}.
+
+Please renew soon to avoid any interruption in your membership benefits.
+
+Best regards,
+{{organization_name}} Team`,
+    is_active: true,
+    is_default: true,
+  },
+  {
+    name: 'Event Reminder',
+    template_type: 'event' as const,
+    description: 'Reminder for upcoming events',
+    subject: 'Reminder: {{event_title}} - {{event_date}}',
+    body: `Dear {{first_name}} {{last_name}},
+
+This is a reminder about the upcoming event:
+
+Event: {{event_title}}
+Date: {{event_date}}
+
+We look forward to seeing you there!
+
+Best regards,
+{{organization_name}} Team`,
+    is_active: true,
+    is_default: true,
+  },
+];
+
+const TEMPLATE_VARIABLES = [
+  { name: '{{first_name}}', description: 'Member\'s first name' },
+  { name: '{{last_name}}', description: 'Member\'s last name' },
+  { name: '{{organization_name}}', description: 'Organization name' },
+  { name: '{{membership_type}}', description: 'Type of membership' },
+  { name: '{{expiry_date}}', description: 'Membership expiry date' },
+  { name: '{{event_title}}', description: 'Event title' },
+  { name: '{{event_date}}', description: 'Event date' },
+];
+
+function EmailTemplatesView({ organizationId, profileId }: EmailTemplatesViewProps) {
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [filterType, setFilterType] = useState<string>('all');
+
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    subject: '',
+    body: '',
+    template_type: 'custom' as EmailTemplate['template_type'],
+    is_active: true,
+    is_default: false,
+  });
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [organizationId]);
+
+  const fetchTemplates = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        await createDefaultTemplates();
+      } else {
+        setTemplates(data || []);
+      }
+    } catch (error: any) {
+      console.error('Error fetching templates:', error);
+      toast.error('Failed to load templates', { description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDefaultTemplates = async () => {
+    try {
+      const templatesData = DEFAULT_TEMPLATES.map(template => ({
+        organization_id: organizationId,
+        created_by: profileId,
+        ...template,
+      }));
+
+      const { data, error } = await supabase
+        .from('email_templates')
+        .insert(templatesData)
+        .select();
+
+      if (error) throw error;
+
+      setTemplates(data || []);
+      toast.success('Default templates created successfully');
+    } catch (error: any) {
+      console.error('Error creating default templates:', error);
+      toast.error('Failed to create default templates', { description: error.message });
+    }
+  };
+
+  const handleCreateTemplate = async () => {
+    try {
+      if (!formData.name || !formData.subject || !formData.body) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      if (formData.subject.length > 500) {
+        toast.error('Subject line must be 500 characters or less');
+        return;
+      }
+
+      let updateData: any = {
+        organization_id: organizationId,
+        created_by: profileId,
+        name: formData.name,
+        description: formData.description || null,
+        subject: formData.subject,
+        body: formData.body,
+        template_type: formData.template_type,
+        is_active: formData.is_active,
+        is_default: formData.is_default,
+      };
+
+      if (formData.is_default) {
+        await supabase
+          .from('email_templates')
+          .update({ is_default: false })
+          .eq('organization_id', organizationId)
+          .eq('template_type', formData.template_type);
+      }
+
+      const { error } = await supabase.from('email_templates').insert(updateData);
+
+      if (error) throw error;
+
+      toast.success('Template created successfully');
+      setShowCreateModal(false);
+      resetForm();
+      fetchTemplates();
+    } catch (error: any) {
+      console.error('Error creating template:', error);
+      toast.error('Failed to create template', { description: error.message });
+    }
+  };
+
+  const handleUpdateTemplate = async () => {
+    try {
+      if (!selectedTemplate || !formData.name || !formData.subject || !formData.body) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      if (formData.subject.length > 500) {
+        toast.error('Subject line must be 500 characters or less');
+        return;
+      }
+
+      if (formData.is_default) {
+        await supabase
+          .from('email_templates')
+          .update({ is_default: false })
+          .eq('organization_id', organizationId)
+          .eq('template_type', formData.template_type)
+          .neq('id', selectedTemplate.id);
+      }
+
+      const { error } = await supabase
+        .from('email_templates')
+        .update({
+          name: formData.name,
+          description: formData.description || null,
+          subject: formData.subject,
+          body: formData.body,
+          template_type: formData.template_type,
+          is_active: formData.is_active,
+          is_default: formData.is_default,
+        })
+        .eq('id', selectedTemplate.id);
+
+      if (error) throw error;
+
+      toast.success('Template updated successfully');
+      setShowEditModal(false);
+      setSelectedTemplate(null);
+      resetForm();
+      fetchTemplates();
+    } catch (error: any) {
+      console.error('Error updating template:', error);
+      toast.error('Failed to update template', { description: error.message });
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      if (!confirm('Are you sure you want to delete this template?')) return;
+
+      const { error } = await supabase.from('email_templates').delete().eq('id', templateId);
+
+      if (error) throw error;
+
+      toast.success('Template deleted successfully');
+      fetchTemplates();
+    } catch (error: any) {
+      console.error('Error deleting template:', error);
+      toast.error('Failed to delete template', { description: error.message });
+    }
+  };
+
+  const handleDuplicateTemplate = async (template: EmailTemplate) => {
+    try {
+      const { error } = await supabase.from('email_templates').insert({
+        organization_id: organizationId,
+        created_by: profileId,
+        name: `${template.name} (Copy)`,
+        description: template.description,
+        subject: template.subject,
+        body: template.body,
+        template_type: template.template_type,
+        is_active: template.is_active,
+        is_default: false,
+      });
+
+      if (error) throw error;
+
+      toast.success('Template duplicated successfully');
+      fetchTemplates();
+    } catch (error: any) {
+      console.error('Error duplicating template:', error);
+      toast.error('Failed to duplicate template', { description: error.message });
+    }
+  };
+
+  const handleToggleActive = async (template: EmailTemplate) => {
+    try {
+      const { error } = await supabase
+        .from('email_templates')
+        .update({ is_active: !template.is_active })
+        .eq('id', template.id);
+
+      if (error) throw error;
+
+      toast.success(`Template ${!template.is_active ? 'activated' : 'deactivated'}`);
+      fetchTemplates();
+    } catch (error: any) {
+      console.error('Error toggling template status:', error);
+      toast.error('Failed to update template status', { description: error.message });
+    }
+  };
+
+  const openEditModal = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+    setFormData({
+      name: template.name,
+      description: template.description || '',
+      subject: template.subject,
+      body: template.body,
+      template_type: template.template_type,
+      is_active: template.is_active,
+      is_default: template.is_default,
+    });
+    setShowEditModal(true);
+  };
+
+  const openPreviewModal = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+    setShowPreviewModal(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      subject: '',
+      body: '',
+      template_type: 'custom',
+      is_active: true,
+      is_default: false,
+    });
+  };
+
+  const insertVariable = (variable: string) => {
+    const textarea = document.querySelector('[data-testid="textarea-body"]') as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = formData.body;
+      const newText = text.substring(0, start) + variable + text.substring(end);
+      setFormData({ ...formData, body: newText });
+      
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + variable.length, start + variable.length);
+      }, 0);
+    } else {
+      setFormData({ ...formData, body: formData.body + variable });
+    }
+  };
+
+  const getTemplateTypeBadge = (type: string) => {
+    const colors: Record<string, string> = {
+      welcome: 'bg-green-100 text-green-800',
+      renewal: 'bg-blue-100 text-blue-800',
+      expiry: 'bg-yellow-100 text-yellow-800',
+      event: 'bg-purple-100 text-purple-800',
+      newsletter: 'bg-indigo-100 text-indigo-800',
+      custom: 'bg-gray-100 text-gray-800',
+    };
+    return (
+      <Badge className={colors[type] || colors.custom} data-testid={`badge-type-${type}`}>
+        {type}
+      </Badge>
+    );
+  };
+
+  const highlightVariables = (text: string) => {
+    return text.replace(/(\{\{[^}]+\}\})/g, '<span class="text-blue-600 font-semibold">$1</span>');
+  };
+
+  const filteredTemplates = filterType === 'all' 
+    ? templates 
+    : templates.filter(t => t.template_type === filterType);
+
+  const stats = {
+    total: templates.length,
+    active: templates.filter(t => t.is_active).length,
+    default: templates.filter(t => t.is_default).length,
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Total Templates</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2" data-testid="stat-total-templates">
+              {stats.total}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Active Templates</p>
+            <p className="text-3xl font-bold text-green-600 mt-2" data-testid="stat-active-templates">
+              {stats.active}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-gray-600">Default Templates</p>
+            <p className="text-3xl font-bold text-blue-600 mt-2" data-testid="stat-default-templates">
+              {stats.default}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900" data-testid="heading-templates">
+            Email Templates
+          </h2>
+          <p className="text-gray-600 mt-1">Manage your organization's email templates</p>
+        </div>
+        <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-template">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Template
+        </Button>
+      </div>
+
+      <div className="flex gap-4">
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+          data-testid="filter-template-type"
+        >
+          <option value="all">All Types</option>
+          <option value="welcome">Welcome</option>
+          <option value="renewal">Renewal</option>
+          <option value="expiry">Expiry</option>
+          <option value="event">Event</option>
+          <option value="newsletter">Newsletter</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+        </div>
+      ) : filteredTemplates.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <p className="text-gray-500">No templates found. Create your first template to get started.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          {filteredTemplates.map((template) => (
+            <Card key={template.id} data-testid={`template-card-${template.id}`}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900" data-testid={`template-name-${template.id}`}>
+                        {template.name}
+                      </h3>
+                      {getTemplateTypeBadge(template.template_type)}
+                      {template.is_default && (
+                        <Badge variant="default" className="bg-yellow-100 text-yellow-800" data-testid={`template-default-badge-${template.id}`}>
+                          ★ Default
+                        </Badge>
+                      )}
+                      <Badge 
+                        variant={template.is_active ? 'default' : 'secondary'}
+                        className={template.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}
+                        data-testid={`template-status-badge-${template.id}`}
+                      >
+                        {template.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    {template.description && (
+                      <p className="text-sm text-gray-600 mb-2" data-testid={`template-description-${template.id}`}>
+                        {template.description}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500" data-testid={`template-subject-${template.id}`}>
+                      <strong>Subject:</strong> {template.subject}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openPreviewModal(template)}
+                      data-testid={`button-preview-${template.id}`}
+                    >
+                      Preview
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEditModal(template)}
+                      data-testid={`button-edit-${template.id}`}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDuplicateTemplate(template)}
+                      data-testid={`button-duplicate-${template.id}`}
+                    >
+                      Duplicate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleToggleActive(template)}
+                      data-testid={`button-toggle-active-${template.id}`}
+                    >
+                      {template.is_active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteTemplate(template.id)}
+                      data-testid={`button-delete-${template.id}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Create Email Template</CardTitle>
+              <CardDescription>Create a new email template for your organization</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Template Name *</label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter template name"
+                    data-testid="input-template-name"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter template description"
+                    data-testid="input-template-description"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Template Type *</label>
+                  <select
+                    value={formData.template_type}
+                    onChange={(e) => setFormData({ ...formData, template_type: e.target.value as EmailTemplate['template_type'] })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    data-testid="select-template-type"
+                  >
+                    <option value="welcome">Welcome</option>
+                    <option value="renewal">Renewal</option>
+                    <option value="expiry">Expiry</option>
+                    <option value="event">Event</option>
+                    <option value="newsletter">Newsletter</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="rounded"
+                      data-testid="checkbox-is-active"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Active</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_default}
+                      onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                      className="rounded"
+                      data-testid="checkbox-is-default"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Set as Default</span>
+                  </label>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subject Line * (max 500 characters)
+                  </label>
+                  <Input
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    placeholder="Enter email subject"
+                    maxLength={500}
+                    data-testid="input-template-subject"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{formData.subject.length}/500 characters</p>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Body *</label>
+                  <Textarea
+                    value={formData.body}
+                    onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                    placeholder="Enter email body content"
+                    rows={10}
+                    data-testid="textarea-body"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Available Variables</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TEMPLATE_VARIABLES.map((variable) => (
+                      <button
+                        key={variable.name}
+                        type="button"
+                        onClick={() => insertVariable(variable.name)}
+                        className="text-left px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                        data-testid={`button-variable-${variable.name}`}
+                      >
+                        <code className="text-blue-600 font-mono">{variable.name}</code>
+                        <p className="text-xs text-gray-500">{variable.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => { setShowCreateModal(false); resetForm(); }}
+                  data-testid="button-cancel-create"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateTemplate} data-testid="button-save-template">
+                  Create Template
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {showEditModal && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Edit Email Template</CardTitle>
+              <CardDescription>Update your email template</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Template Name *</label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter template name"
+                    data-testid="input-edit-template-name"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter template description"
+                    data-testid="input-edit-template-description"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Template Type *</label>
+                  <select
+                    value={formData.template_type}
+                    onChange={(e) => setFormData({ ...formData, template_type: e.target.value as EmailTemplate['template_type'] })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    data-testid="select-edit-template-type"
+                  >
+                    <option value="welcome">Welcome</option>
+                    <option value="renewal">Renewal</option>
+                    <option value="expiry">Expiry</option>
+                    <option value="event">Event</option>
+                    <option value="newsletter">Newsletter</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="rounded"
+                      data-testid="checkbox-edit-is-active"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Active</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_default}
+                      onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                      className="rounded"
+                      data-testid="checkbox-edit-is-default"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Set as Default</span>
+                  </label>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subject Line * (max 500 characters)
+                  </label>
+                  <Input
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    placeholder="Enter email subject"
+                    maxLength={500}
+                    data-testid="input-edit-template-subject"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{formData.subject.length}/500 characters</p>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Body *</label>
+                  <Textarea
+                    value={formData.body}
+                    onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                    placeholder="Enter email body content"
+                    rows={10}
+                    data-testid="textarea-edit-body"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Available Variables</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TEMPLATE_VARIABLES.map((variable) => (
+                      <button
+                        key={variable.name}
+                        type="button"
+                        onClick={() => insertVariable(variable.name)}
+                        className="text-left px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                        data-testid={`button-edit-variable-${variable.name}`}
+                      >
+                        <code className="text-blue-600 font-mono">{variable.name}</code>
+                        <p className="text-xs text-gray-500">{variable.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => { setShowEditModal(false); setSelectedTemplate(null); resetForm(); }}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateTemplate} data-testid="button-update-template">
+                  Update Template
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {showPreviewModal && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Template Preview: {selectedTemplate.name}</CardTitle>
+              <CardDescription>Preview of how the email will appear</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Subject:</label>
+                <div 
+                  className="p-3 bg-gray-50 rounded border border-gray-200"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightVariables(selectedTemplate.subject)) }}
+                  data-testid="preview-subject"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Body:</label>
+                <div 
+                  className="p-4 bg-gray-50 rounded border border-gray-200 whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlightVariables(selectedTemplate.body)) }}
+                  data-testid="preview-body"
+                />
+              </div>
+
+              <div className="pt-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Template Variables Used:</h4>
+                <div className="flex flex-wrap gap-2">
+                  {TEMPLATE_VARIABLES.filter(v => 
+                    selectedTemplate.subject.includes(v.name) || selectedTemplate.body.includes(v.name)
+                  ).map(variable => (
+                    <Badge key={variable.name} variant="outline" className="text-blue-600">
+                      {variable.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => { setShowPreviewModal(false); setSelectedTemplate(null); }}
+                  data-testid="button-close-preview"
+                >
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
