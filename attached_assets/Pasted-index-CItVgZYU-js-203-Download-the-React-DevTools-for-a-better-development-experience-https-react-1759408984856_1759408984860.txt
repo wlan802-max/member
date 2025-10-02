@@ -1,0 +1,127 @@
+index-CItVgZYU.js:203 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 useAuth: Starting auth check
+index-CItVgZYU.js:228 Loading organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Getting current organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Getting organization for subdomain: frps
+index-CItVgZYU.js:228 useAuth: Starting auth check
+index-CItVgZYU.js:228 Loading organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Getting current organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Getting organization for subdomain: frps
+index-CItVgZYU.js:228 useAuth: getCurrentUser resolved with user: null
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 useAuth: getCurrentUser resolved with user: null
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 useAuth: Auth state changed, user: null
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/organizations?select=*&slug=eq.frps&is_active=eq.true:1  Failed to load resource: the server responded with a status of 401 ()
+index-CItVgZYU.js:228 Organization not found: Object
+index-CItVgZYU.js:228 Current organization result: null
+index-CItVgZYU.js:228 No organization selected - will show selector
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/organizations?select=*&slug=eq.frps&is_active=eq.true:1  Failed to load resource: the server responded with a status of 401 ()
+index-CItVgZYU.js:228 useAuth: Starting auth check
+index-CItVgZYU.js:228 Loading organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Getting current organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Getting organization for subdomain: frps
+index-CItVgZYU.js:228 useAuth: Starting auth check
+index-CItVgZYU.js:228 Loading organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Getting current organization...
+index-CItVgZYU.js:228 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Production mode, is admin: false
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Getting organization for subdomain: frps
+index-CItVgZYU.js:228 Organization not found: Object
+index-CItVgZYU.js:228 Current organization result: null
+index-CItVgZYU.js:228 No organization selected - will show selector
+index-CItVgZYU.js:228 useAuth: getCurrentUser resolved with user: null
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 useAuth: getCurrentUser resolved with user: null
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 useAuth: Auth state changed, user: null
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/organizations?select=*&slug=eq.frps&is_active=eq.true:1  Failed to load resource: the server responded with a status of 401 ()
+index-CItVgZYU.js:228 Organization not found: Object
+index-CItVgZYU.js:228 Current organization result: null
+index-CItVgZYU.js:228 No organization selected - will show selector
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/organizations?select=*&slug=eq.frps&is_active=eq.true:1  Failed to load resource: the server responded with a status of 401 ()
+index-CItVgZYU.js:228 Organization not found: Object
+index-CItVgZYU.js:228 Current organization result: null
+index-CItVgZYU.js:228 No organization selected - will show selector
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
+index-CItVgZYU.js:228 Current hostname: frps.member.ringing.org.uk
+index-CItVgZYU.js:228 Hostname parts: Array(5)
+index-CItVgZYU.js:228 Production mode, detected subdomain: frps
