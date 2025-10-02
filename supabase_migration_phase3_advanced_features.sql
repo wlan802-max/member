@@ -237,10 +237,12 @@ USING (
   )
 );
 
--- System can insert reminder logs (for background jobs)
-CREATE POLICY "System can insert reminder logs"
+-- Service role can insert reminder logs (for background jobs)
+-- NOTE: This policy restricts insert to service_role only
+-- Background jobs must authenticate with service_role key
+CREATE POLICY "Service role can insert reminder logs"
 ON reminder_logs FOR INSERT
-WITH CHECK (true);
+WITH CHECK (auth.role() = 'service_role');
 
 -- ============================================================================
 -- PART 3: CUSTOM REPORT BUILDER
