@@ -1,0 +1,85 @@
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 useAuth: Starting auth check
+index-T6W0CdtP.js:64 Loading organization...
+index-T6W0CdtP.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Production mode, is admin: false
+index-T6W0CdtP.js:64 Getting current organization...
+index-T6W0CdtP.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Production mode, is admin: false
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 Getting organization for subdomain: frps
+index-T6W0CdtP.js:64 useAuth: getCurrentUser resolved with user: null
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 useAuth: Auth state changed, user: null
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 Found organization: Object
+index-T6W0CdtP.js:64 Current organization result: Object
+index-T6W0CdtP.js:64 Organization found: Fairbourne Railway Preservation Society
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 useAuth: Starting auth check
+index-T6W0CdtP.js:64 Loading organization...
+index-T6W0CdtP.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Production mode, is admin: false
+index-T6W0CdtP.js:64 Getting current organization...
+index-T6W0CdtP.js:64 Checking if super admin subdomain for hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Production mode, is admin: false
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 Getting organization for subdomain: frps
+index-T6W0CdtP.js:64 useAuth: getCurrentUser resolved with user: null
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 useAuth: Auth state changed, user: null
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable
+index-T6W0CdtP.js:64 Found organization: Object
+index-T6W0CdtP.js:64 Current organization result: Object
+index-T6W0CdtP.js:64 Organization found: Fairbourne Railway Preservation Society
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: Array(5)
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 Current hostname: frps.member.ringing.org.uk
+index-T6W0CdtP.js:64 Hostname parts: (5) ['frps', 'member', 'ringing', 'org', 'uk']
+index-T6W0CdtP.js:64 Production mode, detected subdomain: frps
+index-T6W0CdtP.js:64 useAuth: Starting auth check
+index-T6W0CdtP.js:64 useAuth: getCurrentUser resolved with user: null
+index-T6W0CdtP.js:64 useAuth: Auth state changed, user: null
+index-T6W0CdtP.js:62  GET https://zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/organization_form_schemas?select=*&organization_id=eq.9d1af3cd-4dea-473c-ae79-a69efe3404f8&is_active=eq.true&order=schema_version.desc&limit=1 406 (Not Acceptable)
+(anonymous) @ index-T6W0CdtP.js:62
+(anonymous) @ index-T6W0CdtP.js:62
+l @ index-T6W0CdtP.js:62
+Promise.then
+u @ index-T6W0CdtP.js:62
+(anonymous) @ index-T6W0CdtP.js:62
+fx @ index-T6W0CdtP.js:62
+(anonymous) @ index-T6W0CdtP.js:62
+then @ index-T6W0CdtP.js:40
+index-T6W0CdtP.js:219 Schema load error: {code: 'PGRST116', details: 'The result contains 0 rows', hint: null, message: 'Cannot coerce the result to a single JSON object'}
+w @ index-T6W0CdtP.js:219
+await in w
+(anonymous) @ index-T6W0CdtP.js:219
+ga @ index-T6W0CdtP.js:40
+hs @ index-T6W0CdtP.js:40
+cy @ index-T6W0CdtP.js:40
+gn @ index-T6W0CdtP.js:40
+Xd @ index-T6W0CdtP.js:40
+nn @ index-T6W0CdtP.js:38
+(anonymous) @ index-T6W0CdtP.js:40
