@@ -595,15 +595,15 @@ interface RenewalModalProps {
 
 function RenewalModal({
   organizationId,
-  organizationName,
-  organizationSlug,
+  organizationName: _organizationName,
+  organizationSlug: _organizationSlug,
   profileId,
   profileEmail,
   profileFirstName,
   profileLastName,
   renewalFormSchemaId,
-  logoUrl,
-  primaryColor,
+  logoUrl: _logoUrl,
+  primaryColor: _primaryColor,
   onClose,
   onSuccess
 }: RenewalModalProps) {
@@ -1589,6 +1589,16 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
 
     setUploadingLogo(true);
     try {
+      // Delete old logo if it exists
+      if (logoUrl) {
+        const oldFileName = logoUrl.split('/').pop();
+        if (oldFileName) {
+          await supabase.storage
+            .from('organization-logos')
+            .remove([oldFileName]);
+        }
+      }
+
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${organization.id}-${Date.now()}.${fileExt}`;
@@ -1608,7 +1618,7 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
         .from('organization-logos')
         .getPublicUrl(fileName);
 
-      // Update organization logo_url
+      // Update organization logo_url in database
       const { error: updateError } = await supabase
         .from('organizations')
         .update({ logo_url: publicUrl })
@@ -1616,6 +1626,7 @@ function SettingsAdminView({ organization }: SettingsAdminViewProps) {
 
       if (updateError) throw updateError;
 
+      // Update local state
       setLogoUrl(publicUrl);
       toast.success('Logo uploaded successfully');
     } catch (error: any) {

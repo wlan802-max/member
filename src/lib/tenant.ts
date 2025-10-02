@@ -11,6 +11,13 @@ export interface Organization {
   contact_email: string
   contact_phone: string | null
   settings: any
+  membership_year_start_month: number
+  membership_year_end_month: number
+  renewal_enabled: boolean
+  renewal_form_schema_id: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 export const tenant = {

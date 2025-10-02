@@ -40,7 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_subscriber_lists_list ON subscriber_lists(mailing
 CREATE INDEX IF NOT EXISTS idx_subscriber_lists_status ON subscriber_lists(status);
 CREATE INDEX IF NOT EXISTS idx_email_campaigns_list ON email_campaigns(mailing_list_id);
 
--- 5. Create trigger to update subscriber_count
+-- 5. Create trigger to update subscriber_count (only count 'subscribed' status)
 CREATE OR REPLACE FUNCTION update_mailing_list_subscriber_count()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -93,7 +93,7 @@ ALTER TABLE mailing_lists ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriber_lists ENABLE ROW LEVEL SECURITY;
 
 -- 8. RLS Policies for mailing_lists
--- Allow organization admins/members to view their organization's lists
+-- Allow organization members to view their organization's lists
 CREATE POLICY "Users can view their organization's mailing lists"
 ON mailing_lists FOR SELECT
 USING (
@@ -102,9 +102,38 @@ USING (
   )
 );
 
--- Allow organization admins to manage mailing lists
-CREATE POLICY "Admins can manage their organization's mailing lists"
-ON mailing_lists FOR ALL
+-- Allow organization admins to insert mailing lists
+CREATE POLICY "Admins can insert mailing lists"
+ON mailing_lists FOR INSERT
+WITH CHECK (
+  organization_id IN (
+    SELECT organization_id FROM profiles 
+    WHERE user_id = auth.uid() 
+    AND role IN ('admin', 'super_admin')
+  )
+);
+
+-- Allow organization admins to update their organization's mailing lists
+CREATE POLICY "Admins can update their organization's mailing lists"
+ON mailing_lists FOR UPDATE
+USING (
+  organization_id IN (
+    SELECT organization_id FROM profiles 
+    WHERE user_id = auth.uid() 
+    AND role IN ('admin', 'super_admin')
+  )
+)
+WITH CHECK (
+  organization_id IN (
+    SELECT organization_id FROM profiles 
+    WHERE user_id = auth.uid() 
+    AND role IN ('admin', 'super_admin')
+  )
+);
+
+-- Allow organization admins to delete their organization's mailing lists
+CREATE POLICY "Admins can delete their organization's mailing lists"
+ON mailing_lists FOR DELETE
 USING (
   organization_id IN (
     SELECT organization_id FROM profiles 
@@ -114,8 +143,8 @@ USING (
 );
 
 -- 9. RLS Policies for subscriber_lists
--- Users can view their own subscriptions
-CREATE POLICY "Users can view their own list subscriptions"
+-- Users can view their own subscriptions, admins can view all in their org
+CREATE POLICY "Users can view list subscriptions"
 ON subscriber_lists FOR SELECT
 USING (
   subscriber_id IN (
@@ -134,16 +163,80 @@ USING (
   )
 );
 
--- Users can manage their own subscriptions
-CREATE POLICY "Users can manage their own list subscriptions"
-ON subscriber_lists FOR ALL
+-- Users can subscribe themselves to lists
+CREATE POLICY "Users can subscribe to lists"
+ON subscriber_lists FOR INSERT
+WITH CHECK (
+  subscriber_id IN (
+    SELECT s.id FROM subscribers s
+    JOIN profiles p ON p.email = s.email
+    WHERE p.user_id = auth.uid()
+  )
+  AND
+  mailing_list_id IN (
+    SELECT ml.id FROM mailing_lists ml
+    JOIN profiles p ON p.organization_id = ml.organization_id
+    WHERE p.user_id = auth.uid()
+  )
+);
+
+-- Users can update their own subscriptions (change status)
+CREATE POLICY "Users can update their own subscriptions"
+ON subscriber_lists FOR UPDATE
 USING (
   subscriber_id IN (
     SELECT s.id FROM subscribers s
     JOIN profiles p ON p.email = s.email
     WHERE p.user_id = auth.uid()
   )
-  OR
+)
+WITH CHECK (
+  subscriber_id IN (
+    SELECT s.id FROM subscribers s
+    JOIN profiles p ON p.email = s.email
+    WHERE p.user_id = auth.uid()
+  )
+);
+
+-- Admins can update any subscription in their organization
+CREATE POLICY "Admins can update org subscriptions"
+ON subscriber_lists FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM subscribers s
+    JOIN mailing_lists ml ON ml.id = subscriber_lists.mailing_list_id
+    JOIN profiles p ON p.organization_id = ml.organization_id
+    WHERE s.id = subscriber_lists.subscriber_id
+    AND p.user_id = auth.uid()
+    AND p.role IN ('admin', 'super_admin')
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM subscribers s
+    JOIN mailing_lists ml ON ml.id = subscriber_lists.mailing_list_id
+    JOIN profiles p ON p.organization_id = ml.organization_id
+    WHERE s.id = subscriber_lists.subscriber_id
+    AND p.user_id = auth.uid()
+    AND p.role IN ('admin', 'super_admin')
+  )
+);
+
+-- Users can unsubscribe (delete their subscription)
+CREATE POLICY "Users can delete their own subscriptions"
+ON subscriber_lists FOR DELETE
+USING (
+  subscriber_id IN (
+    SELECT s.id FROM subscribers s
+    JOIN profiles p ON p.email = s.email
+    WHERE p.user_id = auth.uid()
+  )
+);
+
+-- Admins can delete any subscription in their organization
+CREATE POLICY "Admins can delete org subscriptions"
+ON subscriber_lists FOR DELETE
+USING (
   EXISTS (
     SELECT 1 FROM subscribers s
     JOIN mailing_lists ml ON ml.id = subscriber_lists.mailing_list_id
@@ -168,7 +261,7 @@ WHERE NOT EXISTS (
   WHERE organization_id = organizations.id AND slug = 'general'
 );
 
--- 11. Migrate existing subscribers to the "General" list
+-- 11. Migrate existing subscribers to the "General" list (only if subscribed)
 INSERT INTO subscriber_lists (subscriber_id, mailing_list_id, status, subscribed_at)
 SELECT 
   s.id,
@@ -177,10 +270,12 @@ SELECT
   s.subscribed_at
 FROM subscribers s
 JOIN mailing_lists ml ON ml.organization_id = s.organization_id AND ml.slug = 'general'
-WHERE NOT EXISTS (
+WHERE s.status = 'subscribed'
+AND NOT EXISTS (
   SELECT 1 FROM subscriber_lists sl
   WHERE sl.subscriber_id = s.id AND sl.mailing_list_id = ml.id
-);
+)
+ON CONFLICT (subscriber_id, mailing_list_id) DO NOTHING;
 
 -- Comments
 COMMENT ON TABLE mailing_lists IS 'Stores different mailing lists for each organization';
