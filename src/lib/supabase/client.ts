@@ -197,6 +197,10 @@ export type Database = {
           is_published: boolean
           registration_url: string | null
           max_attendees: number | null
+          current_attendees: number
+          registration_deadline: string | null
+          allow_waitlist: boolean
+          require_approval: boolean
           created_by: string | null
           created_at: string
           updated_at: string
@@ -212,6 +216,10 @@ export type Database = {
           is_published?: boolean
           registration_url?: string | null
           max_attendees?: number | null
+          current_attendees?: number
+          registration_deadline?: string | null
+          allow_waitlist?: boolean
+          require_approval?: boolean
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -227,7 +235,119 @@ export type Database = {
           is_published?: boolean
           registration_url?: string | null
           max_attendees?: number | null
+          current_attendees?: number
+          registration_deadline?: string | null
+          allow_waitlist?: boolean
+          require_approval?: boolean
           created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      event_registrations: {
+        Row: {
+          id: string
+          event_id: string
+          profile_id: string
+          organization_id: string
+          status: 'registered' | 'waitlist' | 'cancelled' | 'checked_in' | 'pending_approval'
+          registered_at: string
+          cancelled_at: string | null
+          checked_in_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          profile_id: string
+          organization_id: string
+          status?: 'registered' | 'waitlist' | 'cancelled' | 'checked_in' | 'pending_approval'
+          registered_at?: string
+          cancelled_at?: string | null
+          checked_in_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          profile_id?: string
+          organization_id?: string
+          status?: 'registered' | 'waitlist' | 'cancelled' | 'checked_in' | 'pending_approval'
+          registered_at?: string
+          cancelled_at?: string | null
+          checked_in_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      committees: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          description: string | null
+          slug: string
+          mailing_list_id: string | null
+          is_active: boolean
+          member_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          description?: string | null
+          slug: string
+          mailing_list_id?: string | null
+          is_active?: boolean
+          member_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          description?: string | null
+          slug?: string
+          mailing_list_id?: string | null
+          is_active?: boolean
+          member_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      committee_members: {
+        Row: {
+          id: string
+          committee_id: string
+          profile_id: string
+          role: 'chair' | 'vice_chair' | 'secretary' | 'treasurer' | 'member'
+          joined_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          committee_id: string
+          profile_id: string
+          role?: 'chair' | 'vice_chair' | 'secretary' | 'treasurer' | 'member'
+          joined_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          committee_id?: string
+          profile_id?: string
+          role?: 'chair' | 'vice_chair' | 'secretary' | 'treasurer' | 'member'
+          joined_at?: string
           created_at?: string
           updated_at?: string
         }
