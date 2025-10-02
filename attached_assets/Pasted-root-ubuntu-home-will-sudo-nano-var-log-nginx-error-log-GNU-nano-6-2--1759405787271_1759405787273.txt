@@ -1,0 +1,47 @@
+root@ubuntu:/home/will# sudo nano /var/log/nginx/error.log
+  GNU nano 6.2                                                                       /var/log/nginx/error.log
+2025/10/01 11:00:30 [notice] 3216#3216: using inherited sockets from "6;7;"
+2025/10/01 19:31:37 [error] 6621#6621: *1 connect() failed (111: Unknown error) while connecting to upstream, client: 37.60.141.156, server: member.ringing.org.uk, request: "GET /cgi-bin/l>
+2025/10/01 19:46:41 [error] 10185#10185: *1 connect() failed (111: Unknown error) while connecting to upstream, client: 204.76.203.212, server: member.ringing.org.uk, request: "GET / HTTP/>
+2025/10/01 19:47:59 [notice] 13179#13179: signal process started
+2025/10/01 19:48:04 [notice] 13181#13181: signal process started
+2025/10/01 19:48:07 [notice] 13183#13183: signal process started
+2025/10/01 19:48:08 [notice] 13185#13185: signal process started
+2025/10/01 19:55:24 [notice] 13293#13293: signal process started
+2025/10/01 21:53:01 [error] 692#692: *18 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET /assets/in>
+2025/10/01 21:53:29 [error] 692#692: *20 connect() failed (111: Unknown error) while connecting to upstream, client: 40.119.40.152, server: member.ringing.org.uk, request: "GET /autodiscov>
+2025/10/01 21:58:14 [error] 692#692: *32 access forbidden by rule, client: 196.251.88.64, server: member.ringing.org.uk, request: "GET /.git/config HTTP/1.1", host: "member.ringing.org.uk"
+2025/10/01 22:14:11 [crit] 692#692: *60 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 134.122.30.157, server: 0.0.0.0:443
+2025/10/02 00:41:51 [error] 692#692: *138 access forbidden by rule, client: 87.251.78.46, server: member.ringing.org.uk, request: "GET /.aws/credentials HTTP/1.1", host: "member.ringing.or>
+2025/10/02 01:44:09 [crit] 692#692: *178 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 52.165.82.26, server: 0.0.0.0:443
+2025/10/02 02:09:20 [crit] 692#692: *207 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 212.102.40.218, server: 0.0.0.0:443
+2025/10/02 03:14:45 [crit] 692#692: *300 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 104.193.135.222, server: 0.0.0.0:443
+2025/10/02 03:48:39 [error] 692#692: *318 access forbidden by rule, client: 5.206.227.48, server: member.ringing.org.uk, request: "GET /.env HTTP/1.1", host: "87.106.101.79"
+2025/10/02 04:35:27 [crit] 692#692: *365 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 185.242.226.107, server: 0.0.0.0:443
+2025/10/02 07:00:58 [error] 692#692: *442 access forbidden by rule, client: 213.209.157.232, server: member.ringing.org.uk, request: "GET /.git/config HTTP/1.1", host: "member.ringing.org.>
+2025/10/02 07:50:45 [crit] 692#692: *512 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 159.89.166.70, server: 0.0.0.0:443
+2025/10/02 08:53:40 [crit] 698#698: *22 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 64.62.156.116, server: 0.0.0.0:443
+2025/10/02 09:10:24 [error] 698#698: *66 access forbidden by rule, client: 64.62.156.108, server: member.ringing.org.uk, request: "GET /.git/config HTTP/1.1", host: "87.106.101.79"
+2025/10/02 09:52:15 [crit] 698#698: *134 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 185.247.137.225, server: 0.0.0.0:443
+2025/10/02 11:42:51 [error] 4901#4901: *1 connect() failed (111: Unknown error) while connecting to upstream, client: 37.60.141.156, server: member.ringing.org.uk, request: "GET / HTTP/1.1>
+2025/10/02 11:42:57 [notice] 5543#5543: signal process started
+2025/10/02 11:42:58 [notice] 5545#5545: signal process started
+2025/10/02 11:43:07 [error] 5546#5546: *4 connect() failed (111: Unknown error) while connecting to upstream, client: 45.94.208.195, server: member.ringing.org.uk, request: "GET / HTTP/1.1>
+2025/10/02 11:43:07 [error] 5546#5546: *4 connect() failed (111: Unknown error) while connecting to upstream, client: 45.94.208.195, server: member.ringing.org.uk, request: "GET /favicon.i>
+2025/10/02 11:43:20 [error] 5546#5546: *7 connect() failed (111: Unknown error) while connecting to upstream, client: 195.211.77.140, server: member.ringing.org.uk, request: "HEAD / HTTP/1>
+2025/10/02 11:45:38 [error] 5546#5546: *11 connect() failed (111: Unknown error) while connecting to upstream, client: 106.75.157.207, server: member.ringing.org.uk, request: "GET / HTTP/1>
+2025/10/02 11:45:38 [error] 5546#5546: *12 connect() failed (111: Unknown error) while connecting to upstream, client: 106.75.129.228, server: member.ringing.org.uk, request: "GET / HTTP/1>
+2025/10/02 11:45:39 [error] 5546#5546: *15 connect() failed (111: Unknown error) while connecting to upstream, client: 106.75.157.207, server: member.ringing.org.uk, request: "GET /favicon>
+2025/10/02 11:45:40 [error] 5546#5546: *16 connect() failed (111: Unknown error) while connecting to upstream, client: 106.75.129.228, server: member.ringing.org.uk, request: "GET /favicon>
+2025/10/02 11:45:45 [crit] 5546#5546: *28 SSL_do_handshake() failed (SSL: error:0A00006C:SSL routines::bad key share) while SSL handshaking, client: 106.75.157.207, server: 0.0.0.0:443
+2025/10/02 11:46:18 [error] 5546#5546: *30 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET / HTTP/1>
+2025/10/02 11:46:18 [error] 5546#5546: *30 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET /favicon>
+2025/10/02 11:46:25 [error] 5546#5546: *34 connect() failed (111: Unknown error) while connecting to upstream, client: 106.75.154.226, server: member.ringing.org.uk, request: "GET / HTTP/1>
+2025/10/02 11:46:26 [error] 5546#5546: *35 connect() failed (111: Unknown error) while connecting to upstream, client: 106.75.142.158, server: member.ringing.org.uk, request: "GET / HTTP/1>
+2025/10/02 11:46:27 [error] 5546#5546: *37 connect() failed (111: Unknown error) while connecting to upstream, client: 106.75.154.226, server: member.ringing.org.uk, request: "GET /favicon>
+2025/10/02 11:46:44 [error] 693#693: *1 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET / HTTP/1.1">
+2025/10/02 11:46:45 [error] 693#693: *1 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET /favicon.ic>
+2025/10/02 11:46:53 [error] 693#693: *4 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET / HTTP/1.1">
+2025/10/02 11:46:53 [error] 693#693: *4 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET /favicon.ic>
+2025/10/02 11:48:21 [error] 692#692: *2 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET / HTTP/1.1">
+2025/10/02 11:48:21 [error] 692#692: *2 connect() failed (111: Unknown error) while connecting to upstream, client: 109.152.125.24, server: member.ringing.org.uk, request: "GET /favicon.ic>
