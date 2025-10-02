@@ -91,7 +91,7 @@ USING (
   )
 );
 
--- Members can register themselves for events
+-- Members can register themselves for events (verify event belongs to their org)
 CREATE POLICY "Members can register for events"
 ON event_registrations FOR INSERT
 WITH CHECK (
@@ -101,9 +101,14 @@ WITH CHECK (
   AND organization_id IN (
     SELECT organization_id FROM profiles WHERE user_id = auth.uid()
   )
+  AND event_id IN (
+    SELECT e.id FROM events e
+    JOIN profiles p ON p.organization_id = e.organization_id
+    WHERE p.user_id = auth.uid()
+  )
 );
 
--- Members can update their own registrations
+-- Members can only cancel their own registrations (not check-in or approve themselves)
 CREATE POLICY "Members can update own registrations"
 ON event_registrations FOR UPDATE
 USING (
@@ -115,6 +120,7 @@ WITH CHECK (
   profile_id IN (
     SELECT id FROM profiles WHERE user_id = auth.uid()
   )
+  AND status IN ('cancelled', 'waitlist')
 );
 
 -- Admins can update any registration in their org
@@ -250,7 +256,7 @@ BEGIN
   END IF;
   
   IF TG_OP = 'INSERT' THEN
-    -- Get profile email
+    -- Get profile email and names
     SELECT email INTO v_profile_email
     FROM profiles
     WHERE id = NEW.profile_id;
@@ -261,8 +267,24 @@ BEGIN
     WHERE email = v_profile_email
     AND organization_id = (SELECT organization_id FROM committees WHERE id = NEW.committee_id);
     
+    -- Create subscriber if it doesn't exist
+    IF v_subscriber_id IS NULL THEN
+      INSERT INTO subscribers (organization_id, email, first_name, last_name, status, subscribed_at)
+      SELECT 
+        c.organization_id,
+        p.email,
+        p.first_name,
+        p.last_name,
+        'subscribed',
+        NOW()
+      FROM committees c
+      JOIN profiles p ON p.id = NEW.profile_id
+      WHERE c.id = NEW.committee_id
+      RETURNING id INTO v_subscriber_id;
+    END IF;
+    
+    -- Subscribe to mailing list
     IF v_subscriber_id IS NOT NULL THEN
-      -- Subscribe to mailing list
       INSERT INTO subscriber_lists (subscriber_id, mailing_list_id, status, subscribed_at)
       VALUES (v_subscriber_id, v_mailing_list_id, 'subscribed', NOW())
       ON CONFLICT (subscriber_id, mailing_list_id) 
