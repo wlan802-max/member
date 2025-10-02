@@ -211,6 +211,89 @@ export function SignupFormEnhanced({
         return;
       }
 
+      // Trigger email workflows for signup
+      try {
+        const { data: workflows, error: workflowError } = await supabase
+          .from('email_workflows')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .in('trigger_event', ['signup', 'both'])
+          .eq('is_active', true);
+
+        if (!workflowError && workflows && workflows.length > 0) {
+          // Map membership IDs to human-readable names
+          const membershipTypeNames = selectedMemberships
+            .map(typeId => membershipTypes.find(mt => mt.id === typeId)?.name || typeId)
+            .join(', ');
+
+          // Trigger workflows (send to backend/edge function to process)
+          for (const workflow of workflows) {
+            try {
+              // Add null checks for subject and template
+              if (!workflow.email_subject || !workflow.email_template) {
+                console.warn('Workflow missing subject or template:', workflow.id);
+                continue;
+              }
+
+              // Replace template variables
+              let subject = workflow.email_subject;
+              let template = workflow.email_template;
+              
+              subject = subject
+                .replace(/\{\{first_name\}\}/g, firstName)
+                .replace(/\{\{last_name\}\}/g, lastName)
+                .replace(/\{\{email\}\}/g, email)
+                .replace(/\{\{membership_type\}\}/g, membershipTypeNames);
+              
+              template = template
+                .replace(/\{\{first_name\}\}/g, firstName)
+                .replace(/\{\{last_name\}\}/g, lastName)
+                .replace(/\{\{email\}\}/g, email)
+                .replace(/\{\{membership_type\}\}/g, membershipTypeNames);
+
+              // Send email via backend API endpoint
+              try {
+                const response = await fetch('/api/send-workflow-email', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    to: workflow.recipient_email,
+                    recipientName: workflow.recipient_name,
+                    subject,
+                    htmlBody: template,
+                    textBody: template,
+                    workflowId: workflow.id,
+                    organizationId: organizationId
+                  }),
+                });
+
+                if (response.ok) {
+                  const result = await response.json();
+                  console.log('Email sent successfully:', result.emailId);
+                } else {
+                  const error = await response.json();
+                  console.error('Failed to send email:', error);
+                }
+              } catch (apiError) {
+                // Log if API not available (e.g., during development with Vite dev server)
+                console.log('Email API not available - workflow would send:', {
+                  workflowId: workflow.id,
+                  to: workflow.recipient_email,
+                  subject
+                });
+              }
+            } catch (err) {
+              console.error('Error processing workflow:', workflow.id, err);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error triggering email workflows:', err);
+        // Don't fail signup if email workflows fail
+      }
+
       toast.success('Account created successfully! Awaiting admin approval.');
       
       setTimeout(() => {
