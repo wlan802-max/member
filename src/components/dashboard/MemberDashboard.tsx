@@ -18,11 +18,14 @@ import {
   Clock,
   Smartphone,
   Download,
-  Plus
+  Plus,
+  X,
+  Loader2
 } from 'lucide-react'
 import { FormBuilder } from '@/components/admin/FormBuilder'
 import { MembershipTypesEditor } from '@/components/admin/MembershipTypesEditor'
 import { EmailWorkflowsManager } from '@/components/admin/EmailWorkflowsManager'
+import { DynamicFormRenderer } from '@/components/forms/DynamicFormRenderer'
 
 // Utility function for date formatting
 const formatDate = (dateString: string) => {
@@ -50,6 +53,7 @@ export function MemberDashboard() {
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [loading, setLoading] = useState(true)
   const [activeView, setActiveView] = useState<'dashboard' | 'profile' | 'events' | 'messages' | 'admin-members' | 'admin-settings' | 'admin-mailing' | 'admin-forms' | 'admin-memberships' | 'admin-workflows'>('dashboard')
+  const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
     // Check URL hash for navigation
@@ -312,14 +316,19 @@ export function MemberDashboard() {
             </CardHeader>
             <CardContent>
               <Button 
-                disabled
+                disabled={!organization?.renewal_enabled}
+                onClick={() => setShowRenewalModal(true)}
                 data-testid="button-renew-membership"
                 style={{ backgroundColor: organization?.primary_color || '#3B82F6' }}
-                title="Renew membership feature coming soon"
+                title={organization?.renewal_enabled ? "Renew your membership" : "Renewal not available"}
               >
                 Renew Membership
               </Button>
-              <p className="text-sm text-gray-600 mt-2">Membership renewal coming soon</p>
+              {organization?.renewal_enabled ? (
+                <p className="text-sm text-gray-600 mt-2">Click to renew your membership for the next year</p>
+              ) : (
+                <p className="text-sm text-gray-600 mt-2">Membership renewal is currently disabled</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -527,8 +536,294 @@ export function MemberDashboard() {
       {activeView === 'admin-workflows' && isAdmin && organization && (
         <EmailWorkflowsManager organizationId={organization.id} />
       )}
+
+      {/* Renewal Modal */}
+      {showRenewalModal && organization && user?.profile && (
+        <RenewalModal
+          organizationId={organization.id}
+          organizationName={organization.name}
+          organizationSlug={organization.slug}
+          profileId={user.profile.id}
+          profileEmail={user.email}
+          profileFirstName={user.profile.first_name}
+          profileLastName={user.profile.last_name}
+          renewalFormSchemaId={organization.renewal_form_schema_id}
+          logoUrl={organization.logo_url}
+          primaryColor={organization.primary_color}
+          onClose={() => setShowRenewalModal(false)}
+          onSuccess={() => {
+            setShowRenewalModal(false);
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   )
+}
+
+// Renewal Modal Component
+interface RenewalModalProps {
+  organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
+  profileId: string;
+  profileEmail: string;
+  profileFirstName: string;
+  profileLastName: string;
+  renewalFormSchemaId: string | null;
+  logoUrl?: string | null;
+  primaryColor?: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function RenewalModal({
+  organizationId,
+  organizationName,
+  organizationSlug,
+  profileId,
+  profileEmail,
+  profileFirstName,
+  profileLastName,
+  renewalFormSchemaId,
+  logoUrl,
+  primaryColor,
+  onClose,
+  onSuccess
+}: RenewalModalProps) {
+  const [formSchema, setFormSchema] = useState<any>(null);
+  const [schemaId, setSchemaId] = useState<string | null>(null);
+  const [schemaVersion, setSchemaVersion] = useState<number | null>(null);
+  const [membershipTypes, setMembershipTypes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadRenewalForm();
+  }, [organizationId, renewalFormSchemaId]);
+
+  const loadRenewalForm = async () => {
+    try {
+      setLoading(true);
+
+      // Load the renewal form (or default signup form if no dedicated renewal form)
+      const formQuery = renewalFormSchemaId
+        ? supabase.from('organization_form_schemas').select('*').eq('id', renewalFormSchemaId).eq('is_active', true).maybeSingle()
+        : supabase.from('organization_form_schemas').select('*').eq('organization_id', organizationId).eq('is_active', true).in('form_type', ['signup', 'both']).maybeSingle();
+
+      const { data: formData, error: formError } = await formQuery;
+
+      if (formError) throw formError;
+
+      if (!formData) {
+        setError('No renewal form configured. Please contact an administrator.');
+        setLoading(false);
+        return;
+      }
+
+      setFormSchema(formData.schema_data);
+      setSchemaId(formData.id);
+      setSchemaVersion(formData.schema_version);
+
+      // Load membership types
+      const { data: typesData, error: typesError } = await supabase
+        .from('organization_membership_types')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('display_order');
+
+      if (typesError) throw typesError;
+
+      setMembershipTypes(
+        typesData.map((mt) => ({
+          id: mt.id,
+          code: mt.code,
+          name: mt.name,
+          description: mt.description || undefined,
+          price: parseFloat(mt.price),
+          is_default: mt.is_default,
+          is_active: mt.is_active,
+          display_order: mt.display_order
+        }))
+      );
+
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Error loading renewal form:', err);
+      setError('Failed to load renewal form. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleRenewalSubmit = async (submittedData: { formData: any; selectedMemberships: string[]; totalAmount: number }) => {
+    const { formData, selectedMemberships, totalAmount } = submittedData;
+
+    if (selectedMemberships.length === 0) {
+      toast.error('Please select at least one membership type');
+      return;
+    }
+
+    try {
+      // Get current membership year
+      const { data: yearData, error: yearError } = await supabase
+        .rpc('get_current_membership_year', { org_id: organizationId });
+
+      if (yearError) {
+        console.error('Error getting membership year:', yearError);
+        toast.error('Failed to determine membership year.');
+        return;
+      }
+
+      const membershipYear = typeof yearData === 'number' ? yearData : new Date().getFullYear();
+
+      // Create membership records for each selected type
+      const membershipRecords = selectedMemberships.map(typeId => ({
+        profile_id: profileId,
+        organization_id: organizationId,
+        membership_type_id: typeId,
+        membership_year: membershipYear,
+        status: 'pending',
+        amount_paid: 0.00
+      }));
+
+      const { error: membershipError } = await supabase
+        .from('memberships')
+        .insert(membershipRecords);
+
+      if (membershipError) {
+        console.error('Error creating membership records:', membershipError);
+        toast.error('Failed to create membership records. Please contact an administrator.');
+        return;
+      }
+
+      // Save form response
+      const { error: responseError } = await supabase
+        .from('profile_form_responses')
+        .insert({
+          profile_id: profileId,
+          organization_id: organizationId,
+          schema_id: schemaId,
+          schema_version: schemaVersion,
+          response_data: formData,
+          selected_membership_types: selectedMemberships,
+          total_amount: totalAmount
+        });
+
+      if (responseError) {
+        console.error('Error saving form response:', responseError);
+        // Don't fail renewal if form response fails
+      }
+
+      // Trigger email workflows for renewal
+      try {
+        const { data: workflows, error: workflowError } = await supabase
+          .from('email_workflows')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .in('trigger_event', ['renewal', 'both'])
+          .eq('is_active', true);
+
+        if (!workflowError && workflows && workflows.length > 0) {
+          const membershipTypeNames = selectedMemberships
+            .map(typeId => membershipTypes.find(mt => mt.id === typeId)?.name || typeId)
+            .join(', ');
+
+          for (const workflow of workflows) {
+            try {
+              if (!workflow.email_subject || !workflow.email_template) continue;
+
+              let subject = workflow.email_subject
+                .replace(/\{\{first_name\}\}/g, profileFirstName)
+                .replace(/\{\{last_name\}\}/g, profileLastName)
+                .replace(/\{\{email\}\}/g, profileEmail)
+                .replace(/\{\{membership_type\}\}/g, membershipTypeNames);
+              
+              let template = workflow.email_template
+                .replace(/\{\{first_name\}\}/g, profileFirstName)
+                .replace(/\{\{last_name\}\}/g, profileLastName)
+                .replace(/\{\{email\}\}/g, profileEmail)
+                .replace(/\{\{membership_type\}\}/g, membershipTypeNames);
+
+              // Send email via backend
+              const response = await fetch('/api/send-workflow-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: workflow.recipient_email,
+                  recipientName: workflow.recipient_name,
+                  subject,
+                  htmlBody: template,
+                  textBody: template,
+                  workflowId: workflow.id,
+                  organizationId
+                }),
+              });
+
+              if (response.ok) {
+                console.log('Renewal email sent');
+              }
+            } catch (err) {
+              console.error('Error sending renewal email:', err);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error triggering email workflows:', err);
+      }
+
+      toast.success('Renewal successful! Awaiting admin approval.');
+      onSuccess();
+    } catch (err) {
+      console.error('Renewal error:', err);
+      toast.error('An unexpected error occurred. Please try again.');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b sticky top-0 bg-white z-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Renew Membership</h2>
+              <p className="text-gray-600 mt-1">Complete the form to renew your membership for the next year</p>
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600" data-testid="button-close-renewal">
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <span className="ml-2">Loading renewal form...</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded p-4 mb-4">
+              <div className="flex items-center gap-2 text-red-800">
+                <AlertCircle className="h-5 w-5" />
+                <p>{error}</p>
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && formSchema && (
+            <DynamicFormRenderer
+              schema={formSchema}
+              membershipTypes={membershipTypes}
+              onSubmit={handleRenewalSubmit}
+              submitLabel="Submit Renewal"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Members Admin View Component
