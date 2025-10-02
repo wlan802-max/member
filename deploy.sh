@@ -280,6 +280,53 @@ install_ssl() {
     sudo systemctl enable certbot.timer
 }
 
+# Setup custom domain support
+setup_custom_domains() {
+    log "Setting up custom domain support..."
+    
+    # Create custom domains management directory
+    sudo mkdir -p /opt/custom-domains
+    
+    # Copy custom domain management files if they exist
+    if [ -f "nginx-custom-domain-template.conf" ]; then
+        sudo cp nginx-custom-domain-template.conf /opt/custom-domains/
+        log "Copied custom domain Nginx template"
+    else
+        warn "Custom domain template not found: nginx-custom-domain-template.conf"
+    fi
+    
+    if [ -f "manage-custom-domain.sh" ]; then
+        sudo cp manage-custom-domain.sh /opt/custom-domains/
+        sudo chmod +x /opt/custom-domains/manage-custom-domain.sh
+        
+        # Create symlink for easy access
+        sudo ln -sf /opt/custom-domains/manage-custom-domain.sh /usr/local/bin/manage-custom-domain
+        log "Installed custom domain management script"
+        log "You can now use: sudo manage-custom-domain [add|remove|ssl|list] <domain>"
+    else
+        warn "Custom domain management script not found: manage-custom-domain.sh"
+    fi
+    
+    # Copy documentation if it exists
+    if [ -f "CUSTOM_DOMAINS_SETUP.md" ]; then
+        sudo cp CUSTOM_DOMAINS_SETUP.md /opt/custom-domains/
+        log "Copied custom domain setup documentation to /opt/custom-domains/CUSTOM_DOMAINS_SETUP.md"
+    fi
+    
+    # Create certbot webroot for ACME challenges
+    sudo mkdir -p /var/www/certbot
+    sudo chown www-data:www-data /var/www/certbot
+    
+    log "Custom domain support configured!"
+    log ""
+    log "To add a custom domain:"
+    log "1. Have organization admin add domain in UI (Dashboard → Settings → Custom Domains)"
+    log "2. Point domain DNS to this server"
+    log "3. Run: sudo manage-custom-domain add <domain>"
+    log "4. Run: sudo manage-custom-domain ssl <domain>"
+    log "5. Documentation: /opt/custom-domains/CUSTOM_DOMAINS_SETUP.md"
+}
+
 # Deploy application
 deploy_application() {
     log "Deploying application..."
@@ -527,6 +574,7 @@ main() {
     setup_backups
     install_security_tools
     install_ssl
+    setup_custom_domains
     
     log "Deployment completed successfully!"
     log ""
@@ -538,6 +586,12 @@ main() {
     log "5. Configure DNS to point $DOMAIN and *.$DOMAIN to this server"
     log "6. Access your application at: https://$DOMAIN"
     log "7. Access super admin portal at: https://admin.$DOMAIN"
+    log ""
+    log "Custom Domains:"
+    log "- Organizations can use custom domains (e.g., example.com)"
+    log "- Add domains via: Dashboard → Settings → Custom Domains"
+    log "- Manage via: sudo manage-custom-domain [add|remove|ssl|list] <domain>"
+    log "- Documentation: /opt/custom-domains/CUSTOM_DOMAINS_SETUP.md"
     log ""
     log "Important files:"
     log "- Application: $APP_DIR"

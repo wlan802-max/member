@@ -61,8 +61,10 @@ TTL: 3600
 Run the management script on your server:
 
 ```bash
-sudo bash manage-custom-domain.sh add example.com
+sudo manage-custom-domain add example.com
 ```
+
+**Note**: After deployment, you can use the `manage-custom-domain` command from anywhere on your server.
 
 This will:
 - Create HTTP-only Nginx configuration from template
@@ -75,7 +77,7 @@ This will:
 **Important**: Wait until DNS propagation is complete and domain verification succeeds before generating SSL.
 
 ```bash
-sudo bash manage-custom-domain.sh ssl example.com
+sudo manage-custom-domain ssl example.com
 ```
 
 This will:
@@ -93,35 +95,43 @@ Visit `https://example.com` - you should see your organization's login page!
 
 ### Add Custom Domain
 ```bash
-sudo bash manage-custom-domain.sh add example.com
+sudo manage-custom-domain add example.com
 ```
 
 ### Generate SSL Certificate
 ```bash
-sudo bash manage-custom-domain.sh ssl example.com
+sudo manage-custom-domain ssl example.com
 ```
 
 ### Remove Custom Domain
 ```bash
-sudo bash manage-custom-domain.sh remove example.com
+sudo manage-custom-domain remove example.com
 ```
 
 ### List All Custom Domains
 ```bash
-sudo bash manage-custom-domain.sh list
+sudo manage-custom-domain list
 ```
 
 ## Files
 
+After running `deploy.sh`, the following files are deployed to your server:
+
 ### Template File
-- **File**: `nginx-custom-domain-template.conf`
+- **Deployed to**: `/opt/custom-domains/nginx-custom-domain-template.conf`
 - **Purpose**: Template for generating custom domain Nginx configurations
 - **Variables**: `{{DOMAIN}}` is replaced with actual domain name
 
 ### Management Script
-- **File**: `manage-custom-domain.sh`
+- **Deployed to**: `/opt/custom-domains/manage-custom-domain.sh`
+- **Symlink**: `/usr/local/bin/manage-custom-domain` (for easy access from anywhere)
 - **Purpose**: Automate adding/removing custom domains and SSL certificates
 - **Requirements**: Must run with sudo
+- **Usage**: `sudo manage-custom-domain [add|remove|ssl|list] <domain>`
+
+### Documentation
+- **Deployed to**: `/opt/custom-domains/CUSTOM_DOMAINS_SETUP.md`
+- **Purpose**: This setup guide
 
 ### Nginx Configurations
 - **Location**: `/etc/nginx/sites-available/membership-system-<domain>`
