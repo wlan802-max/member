@@ -1,3 +1,17 @@
+set -e
+
+APP_DIR="/var/www/membership-system"
+APP_USER="membership"
+
+# Colors
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+log() {
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+}
     # Clone or copy application files
     if [ -d ".git" ]; then
         log "Copying application files from current directory..."
