@@ -332,21 +332,41 @@ install_ssl() {
             # Update Nginx configuration to use the wildcard certificate
             log "Updating Nginx configuration to use wildcard certificate..."
             
-            sudo sed -i "s|listen 80;|listen 443 ssl http2;\n    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;\n    ssl_protocols TLSv1.2 TLSv1.3;\n    ssl_ciphers HIGH:!aNULL:!MD5;\n    ssl_prefer_server_ciphers on;\n    \n    listen 80;|g" /etc/nginx/sites-available/$APP_NAME
+            # Check if SSL is already configured
+            if grep -q "ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem" /etc/nginx/sites-available/$APP_NAME; then
+                log "SSL already configured in Nginx, skipping SSL configuration update"
+            else
+                # Replace the main server block's "listen 80;" with HTTPS configuration
+                # This targets the FIRST server block by replacing listen 80 before any other server blocks
+                sudo sed -i "0,/listen 80;/{s|listen 80;|listen 443 ssl http2;\n    listen [::]:443 ssl http2;\n    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;\n    ssl_protocols TLSv1.2 TLSv1.3;\n    ssl_ciphers HIGH:!aNULL:!MD5;\n    ssl_prefer_server_ciphers on;|}" /etc/nginx/sites-available/$APP_NAME
+                log "Updated main server block to use HTTPS"
+            fi
             
-            # Add HTTP to HTTPS redirect
-            sudo tee -a /etc/nginx/sites-available/$APP_NAME > /dev/null <<EOF
+            # Add HTTP to HTTPS redirect block (only if it doesn't already exist)
+            if ! grep -q "# HTTP to HTTPS redirect" /etc/nginx/sites-available/$APP_NAME; then
+                sudo tee -a /etc/nginx/sites-available/$APP_NAME > /dev/null <<EOF
 
 # HTTP to HTTPS redirect
 server {
     listen 80;
+    listen [::]:80;
     server_name $DOMAIN *.$DOMAIN;
     return 301 https://\$host\$request_uri;
 }
 EOF
+                log "Added HTTP to HTTPS redirect block"
+            else
+                log "HTTP to HTTPS redirect block already exists, skipping"
+            fi
             
-            sudo nginx -t && sudo systemctl reload nginx
-            log "Nginx updated to use wildcard SSL certificate"
+            # Test and reload nginx
+            if sudo nginx -t; then
+                sudo systemctl reload nginx
+                log "Nginx updated to use wildcard SSL certificate"
+                log "All HTTP traffic will now redirect to HTTPS"
+            else
+                error "Nginx configuration test failed after SSL update. Please check the configuration."
+            fi
         else
             warn "Wildcard SSL certificate setup failed."
             log "You can set it up manually later with:"

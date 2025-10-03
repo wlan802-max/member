@@ -312,11 +312,31 @@ For support and questions:
 
 ## 🗺 Roadmap
 
-- [ ] Email campaign management
+### Completed ✅
+- [✅] Custom signup forms with dynamic fields
+- [✅] Membership types with pricing
+- [✅] Email campaign management via Resend
+- [✅] Event registration with RSVP & waitlist
+- [✅] Committee/group management
+- [✅] Advanced analytics dashboard with charts
+- [✅] Automated email reminders
+- [✅] Member badges/achievements system
+- [✅] Custom report builder with CSV export
+- [✅] Email templates library
+- [✅] Member notes & history
+- [✅] In-app notifications
+- [✅] Document library
+- [✅] Custom domain support with SSL
+- [✅] Multi-tenant architecture
+- [✅] API rate limiting (via Nginx)
+
+### Planned 🚀
 - [ ] Digital wallet integration (Google/Apple Wallet)
-- [ ] Payment processor integration
-- [ ] Advanced analytics dashboard
-- [ ] Mobile app development
-- [ ] Multi-language support
-- [ ] API rate limiting
-- [ ] Enhanced security features
+- [ ] Payment processor integration (Stripe/PayPal)
+- [ ] QR code check-ins for events
+- [ ] Mobile app development (React Native)
+- [ ] Multi-language support (i18n)
+- [ ] Two-factor authentication (2FA)
+- [ ] Advanced member directory with search
+- [ ] Public member profiles (optional)
+- [ ] Attendance certificates/reports
