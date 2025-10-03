@@ -110,17 +110,22 @@ Get credentials from: https://app.supabase.com/project/_/settings/api
    -- Copy and run: supabase/migrations/20251001063830_20250930115029_restless_fog.sql
    ```
 
-4. **Events & Committees** (Event registration, RSVP, committees, groups):
+4. **Events Table** (Base events table - REQUIRED before registrations):
+   ```sql
+   -- Copy and run: supabase_migration_events_table.sql
+   ```
+
+5. **Events & Committees** (Event registration, RSVP, committees, groups):
    ```sql
    -- Copy and run: supabase_migration_event_registrations_committees.sql
    ```
 
-5. **Phase 3 Advanced Features** (Analytics, badges, reports, automated reminders):
+6. **Phase 3 Advanced Features** (Analytics, badges, reports, automated reminders):
    ```sql
    -- Copy and run: supabase_migration_phase3_advanced_features.sql
    ```
 
-6. **Phase 1 Quick Wins** (Email templates, member notes, notifications, documents):
+7. **Phase 1 Quick Wins** (Email templates, member notes, notifications, documents):
    ```sql
    -- Copy and run: supabase_migration_phase1_quick_wins.sql
    ```
