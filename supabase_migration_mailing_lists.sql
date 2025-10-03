@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS mailing_lists (
 -- 2. Create subscriber_lists junction table (many-to-many)
 CREATE TABLE IF NOT EXISTS subscriber_lists (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  subscriber_id UUID NOT NULL REFERENCES subscribers(id) ON DELETE CASCADE,
+  subscriber_id UUID NOT NULL REFERENCES email_subscribers(id) ON DELETE CASCADE,
   mailing_list_id UUID NOT NULL REFERENCES mailing_lists(id) ON DELETE CASCADE,
   status VARCHAR(20) DEFAULT 'subscribed' CHECK (status IN ('subscribed', 'unsubscribed', 'pending')),
   subscribed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
