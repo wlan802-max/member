@@ -1,0 +1,94 @@
+index-DRiyjUtG.js:64 Current hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Hostname parts: (5) ['admin', 'm', 'ringing', 'org', 'uk']
+index-DRiyjUtG.js:64 Production mode, detected subdomain: admin
+index-DRiyjUtG.js:64 useAuth: Starting auth check
+index-DRiyjUtG.js:64 Loading organization...
+index-DRiyjUtG.js:64 Checking if super admin subdomain for hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Production mode, is admin: true
+index-DRiyjUtG.js:64 Detected super admin subdomain
+index-DRiyjUtG.js:64 Current hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Hostname parts: (5) ['admin', 'm', 'ringing', 'org', 'uk']
+index-DRiyjUtG.js:64 Production mode, detected subdomain: admin
+index-DRiyjUtG.js:64 Getting profile for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+index-DRiyjUtG.js:64 Getting profile for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable
+index-DRiyjUtG.js:64 No profile found for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+getCurrentUser @ index-DRiyjUtG.js:64
+await in getCurrentUser
+(anonymous) @ index-DRiyjUtG.js:64
+Yh @ index-DRiyjUtG.js:40
+Xo @ index-DRiyjUtG.js:40
+(anonymous) @ index-DRiyjUtG.js:40
+j @ index-DRiyjUtG.js:25
+O @ index-DRiyjUtG.js:25
+index-DRiyjUtG.js:64 useAuth: getCurrentUser resolved with user: null
+index-DRiyjUtG.js:64 Current hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Hostname parts: (5) ['admin', 'm', 'ringing', 'org', 'uk']
+index-DRiyjUtG.js:64 Production mode, detected subdomain: admin
+index-DRiyjUtG.js:412 Super admin portal detected, user: null
+index-DRiyjUtG.js:412 No user, showing super admin auth
+index-DRiyjUtG.js:64 useAuth: Starting auth check
+index-DRiyjUtG.js:64 No profile found for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+getCurrentUser @ index-DRiyjUtG.js:64
+await in getCurrentUser
+(anonymous) @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+_useSession @ index-DRiyjUtG.js:64
+await in _useSession
+_emitInitialSession @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+await in (anonymous)
+_acquireLock @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+await in (anonymous)
+onAuthStateChange @ index-DRiyjUtG.js:64
+onAuthStateChange @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+Yh @ index-DRiyjUtG.js:40
+Xo @ index-DRiyjUtG.js:40
+(anonymous) @ index-DRiyjUtG.js:40
+j @ index-DRiyjUtG.js:25
+O @ index-DRiyjUtG.js:25
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
+index-DRiyjUtG.js:64 Current hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Hostname parts: (5) ['admin', 'm', 'ringing', 'org', 'uk']
+index-DRiyjUtG.js:64 Production mode, detected subdomain: admin
+index-DRiyjUtG.js:412 Super admin portal detected, user: null
+index-DRiyjUtG.js:412 No user, showing super admin auth
+index-DRiyjUtG.js:64 Getting profile for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+index-DRiyjUtG.js:64 Getting profile for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+index-DRiyjUtG.js:64 No profile found for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+getCurrentUser @ index-DRiyjUtG.js:64
+await in getCurrentUser
+(anonymous) @ index-DRiyjUtG.js:64
+Yh @ index-DRiyjUtG.js:40
+Xo @ index-DRiyjUtG.js:40
+(anonymous) @ index-DRiyjUtG.js:40
+j @ index-DRiyjUtG.js:25
+O @ index-DRiyjUtG.js:25
+index-DRiyjUtG.js:64 useAuth: getCurrentUser resolved with user: null
+index-DRiyjUtG.js:64 No profile found for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+getCurrentUser @ index-DRiyjUtG.js:64
+await in getCurrentUser
+(anonymous) @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+_useSession @ index-DRiyjUtG.js:64
+await in _useSession
+_emitInitialSession @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+await in (anonymous)
+_acquireLock @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+await in (anonymous)
+onAuthStateChange @ index-DRiyjUtG.js:64
+onAuthStateChange @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+Yh @ index-DRiyjUtG.js:40
+Xo @ index-DRiyjUtG.js:40
+(anonymous) @ index-DRiyjUtG.js:40
+j @ index-DRiyjUtG.js:25
+O @ index-DRiyjUtG.js:25
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
