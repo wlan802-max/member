@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Production Deployment Script for Multi-Tenant Membership Management System
-# Ubuntu/Debian Server - Port 5173 - member.ringing.org.uk
+# Ubuntu/Debian Server - Multi-tenant with subdomain support
 
 set -e
 
@@ -9,9 +9,34 @@ set -e
 APP_NAME="membership-system"
 APP_DIR="/var/www/$APP_NAME"
 APP_USER="membership"
-DOMAIN="${DOMAIN:-member.ringing.org.uk}"  # Can be overridden with environment variable
-PORT="5000"  # Changed to 5000 for production consistency
-NODE_VERSION="20"  # Updated to Node.js 20 LTS (2025 recommendation)
+PORT="5000"  # Production port
+NODE_VERSION="20"  # Node.js 20 LTS
+
+# Prompt for domain if not set via environment variable
+if [ -z "$DOMAIN" ]; then
+    echo ""
+    echo "=================================================="
+    echo "  Multi-Tenant Membership Management System"
+    echo "=================================================="
+    echo ""
+    echo "Enter your domain name (e.g., member.ringing.org.uk):"
+    echo "This will be used for:"
+    echo "  - Main domain: https://yourdomain.com"
+    echo "  - Subdomains: https://*.yourdomain.com (admin, org1, org2, etc.)"
+    echo "  - Custom org domains can be added later via the admin UI"
+    echo ""
+    read -p "Domain: " DOMAIN
+    
+    if [ -z "$DOMAIN" ]; then
+        echo "Error: Domain is required"
+        exit 1
+    fi
+    
+    echo ""
+    echo "Domain set to: $DOMAIN"
+    echo "Subdomains will use wildcard: *.$DOMAIN"
+    echo ""
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -259,25 +284,91 @@ install_ssl() {
     log "Installing SSL certificate..."
     sudo apt install certbot python3-certbot-nginx -y
     
-    # Get certificate for main domain first
-    log "Requesting SSL certificate for $DOMAIN"
+    log ""
+    log "========================================="
+    log "  SSL Certificate Setup"
+    log "========================================="
+    log ""
+    log "The system supports two types of SSL certificates:"
+    log "1. Main domain only: $DOMAIN"
+    log "2. Wildcard (recommended): $DOMAIN and *.$DOMAIN (for subdomains)"
+    log ""
+    log "For multi-tenant with subdomains (admin.$DOMAIN, org1.$DOMAIN, etc.),"
+    log "you MUST use wildcard SSL certificate."
+    log ""
     
-    # Try to get certificate automatically
-    if sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN --redirect; then
-        log "SSL certificate installed successfully for $DOMAIN"
+    # Ask user for SSL type
+    echo "Choose SSL certificate type:"
+    echo "1) Wildcard certificate (*.${DOMAIN} + ${DOMAIN}) - RECOMMENDED for multi-tenant"
+    echo "2) Main domain only (${DOMAIN})"
+    echo ""
+    read -p "Enter choice [1 or 2] (default: 1): " ssl_choice
+    ssl_choice=${ssl_choice:-1}
+    
+    if [ "$ssl_choice" = "1" ]; then
+        log "Setting up wildcard SSL certificate..."
+        log ""
+        warn "IMPORTANT: Wildcard certificates require DNS validation."
+        log "You will need to:"
+        log "1. Add a TXT record to your DNS"
+        log "2. Wait for DNS propagation (usually 1-5 minutes)"
+        log "3. Press Enter to continue verification"
+        log ""
+        read -p "Press Enter to start wildcard SSL setup (or Ctrl+C to cancel)..."
+        
+        # Request wildcard certificate with manual DNS validation
+        log "Requesting wildcard SSL certificate for $DOMAIN and *.$DOMAIN..."
+        log ""
+        log "Follow the instructions below to add DNS TXT record:"
+        log ""
+        
+        if sudo certbot certonly --manual --preferred-challenges dns \
+            -d $DOMAIN -d "*.$DOMAIN" \
+            --agree-tos --email admin@$DOMAIN \
+            --manual-public-ip-logging-ok; then
+            
+            log "Wildcard SSL certificate obtained successfully!"
+            
+            # Update Nginx configuration to use the wildcard certificate
+            log "Updating Nginx configuration to use wildcard certificate..."
+            
+            sudo sed -i "s|listen 80;|listen 443 ssl http2;\n    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;\n    ssl_protocols TLSv1.2 TLSv1.3;\n    ssl_ciphers HIGH:!aNULL:!MD5;\n    ssl_prefer_server_ciphers on;\n    \n    listen 80;|g" /etc/nginx/sites-available/$APP_NAME
+            
+            # Add HTTP to HTTPS redirect
+            sudo tee -a /etc/nginx/sites-available/$APP_NAME > /dev/null <<EOF
+
+# HTTP to HTTPS redirect
+server {
+    listen 80;
+    server_name $DOMAIN *.$DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+EOF
+            
+            sudo nginx -t && sudo systemctl reload nginx
+            log "Nginx updated to use wildcard SSL certificate"
+        else
+            warn "Wildcard SSL certificate setup failed."
+            log "You can set it up manually later with:"
+            log "  sudo certbot certonly --manual --preferred-challenges dns -d $DOMAIN -d '*.$DOMAIN'"
+        fi
     else
-        warn "Automatic SSL certificate installation failed."
-        log "You can install it manually later with: sudo certbot --nginx -d $DOMAIN"
+        log "Setting up SSL certificate for main domain only..."
+        
+        if sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN --redirect; then
+            log "SSL certificate installed successfully for $DOMAIN"
+            warn "Note: Subdomains will NOT work with this certificate."
+            warn "For subdomain support, run wildcard SSL setup manually:"
+            log "  sudo certbot certonly --manual --preferred-challenges dns -d $DOMAIN -d '*.$DOMAIN'"
+        else
+            warn "Automatic SSL certificate installation failed."
+            log "You can install it manually later with: sudo certbot --nginx -d $DOMAIN"
+        fi
     fi
-    
-    # For wildcard certificates (subdomains), you'll need DNS validation
-    log "For subdomain support (admin.$DOMAIN, org1.$DOMAIN, etc.), you'll need to:"
-    log "1. Get a wildcard certificate using DNS validation:"
-    log "   sudo certbot certonly --manual --preferred-challenges dns -d $DOMAIN -d *.$DOMAIN"
-    log "2. Update the Nginx configuration to use the wildcard certificate"
     
     # Setup auto-renewal
     sudo systemctl enable certbot.timer
+    log "SSL certificate auto-renewal enabled"
 }
 
 # Setup custom domain support
@@ -576,35 +667,63 @@ main() {
     install_ssl
     setup_custom_domains
     
-    log "Deployment completed successfully!"
     log ""
-    log "Next steps:"
-    log "1. Edit $APP_DIR/.env with your Supabase and other service credentials"
-    log "2. Restart the application: sudo -u $APP_USER pm2 restart $APP_NAME"
-    log "3. Check application status: sudo -u $APP_USER pm2 status"
-    log "4. View logs: sudo -u $APP_USER pm2 logs $APP_NAME"
-    log "5. Configure DNS to point $DOMAIN and *.$DOMAIN to this server"
-    log "6. Access your application at: https://$DOMAIN"
-    log "7. Access super admin portal at: https://admin.$DOMAIN"
+    log "=================================================="
+    log "  Deployment Completed Successfully!"
+    log "=================================================="
     log ""
-    log "Custom Domains:"
-    log "- Organizations can use custom domains (e.g., example.com)"
-    log "- Add domains via: Dashboard → Settings → Custom Domains"
-    log "- Manage via: sudo manage-custom-domain [add|remove|ssl|list] <domain>"
-    log "- Documentation: /opt/custom-domains/CUSTOM_DOMAINS_SETUP.md"
+    log "📋 NEXT STEPS:"
     log ""
-    log "Important files:"
-    log "- Application: $APP_DIR"
-    log "- Environment: $APP_DIR/.env"
-    log "- Nginx config: /etc/nginx/sites-available/$APP_NAME"
-    log "- PM2 config: $APP_DIR/ecosystem.config.cjs"
-    log "- Logs: /var/log/$APP_NAME/"
+    log "1. Configure Environment Variables"
+    log "   Edit: $APP_DIR/.env"
+    log "   Set: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, RESEND_API_KEY"
     log ""
-    log "Useful commands:"
-    log "- Restart app: sudo -u $APP_USER pm2 restart $APP_NAME"
-    log "- View logs: sudo -u $APP_USER pm2 logs $APP_NAME"
-    log "- Reload Nginx: sudo systemctl reload nginx"
-    log "- Check SSL: sudo certbot certificates"
+    log "2. Setup Supabase Database"
+    log "   Run migrations in Supabase SQL Editor in this order:"
+    log "   a) supabase/migrations/20251001063749_20250929231345_bitter_cake.sql"
+    log "   b) supabase/migrations/20251001063812_20250930111734_violet_valley.sql"
+    log "   c) supabase/migrations/20251001063830_20250930115029_restless_fog.sql"
+    log "   d) supabase_migration_event_registrations_committees.sql"
+    log "   e) supabase_migration_phase3_advanced_features.sql"
+    log "   f) supabase_migration_phase1_quick_wins.sql"
+    log ""
+    log "3. Restart Application"
+    log "   sudo -u $APP_USER pm2 restart $APP_NAME"
+    log ""
+    log "4. Configure DNS"
+    log "   Point A records to this server:"
+    log "   - $DOMAIN → $(curl -s ifconfig.me)"
+    log "   - *.$DOMAIN → $(curl -s ifconfig.me) (wildcard for subdomains)"
+    log ""
+    log "5. Access Your Application"
+    log "   - Main site: https://$DOMAIN"
+    log "   - Super Admin: https://admin.$DOMAIN"
+    log "   - Organization: https://orgslug.$DOMAIN"
+    log "   - Or use: https://$DOMAIN?org=orgslug"
+    log ""
+    log "📁 IMPORTANT FILES:"
+    log "   - App directory: $APP_DIR"
+    log "   - Environment: $APP_DIR/.env"
+    log "   - Nginx config: /etc/nginx/sites-available/$APP_NAME"
+    log "   - PM2 config: $APP_DIR/ecosystem.config.cjs"
+    log "   - Logs: /var/log/$APP_NAME/"
+    log ""
+    log "🔧 USEFUL COMMANDS:"
+    log "   - Restart app: sudo -u $APP_USER pm2 restart $APP_NAME"
+    log "   - View logs: sudo -u $APP_USER pm2 logs $APP_NAME"
+    log "   - App status: sudo -u $APP_USER pm2 status"
+    log "   - Reload Nginx: sudo systemctl reload nginx"
+    log "   - Check SSL: sudo certbot certificates"
+    log "   - Renew SSL: sudo certbot renew --dry-run"
+    log ""
+    log "🌐 CUSTOM DOMAINS (Optional):"
+    log "   Organizations can use their own domains (e.g., frps.org.uk)"
+    log "   - Add via: Dashboard → Settings → Custom Domains"
+    log "   - Manage: sudo manage-custom-domain [add|remove|ssl|list] <domain>"
+    log "   - Docs: /opt/custom-domains/CUSTOM_DOMAINS_SETUP.md"
+    log ""
+    log "✅ Deployment complete! Edit .env and restart the app to get started."
+    log ""
 }
 
 # Run main function

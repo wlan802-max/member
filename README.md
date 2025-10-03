@@ -4,14 +4,53 @@ A comprehensive membership management system supporting multiple organizations w
 
 ## 🚀 Features
 
-- **Multi-Tenant Architecture**: Complete data isolation per organization
+### Core Features
+- **Multi-Tenant Architecture**: Complete data isolation per organization using URL parameters or subdomains
+- **Custom Domain Support**: Organizations can use their own domains (e.g., frps.org.uk) with automatic SSL
 - **Organization Selector**: Easy switching between organizations via URL parameter (?org=)
-- **URL Parameter Routing**: Works with subdomains (org.member.ringing.org.uk) or URL parameters (?org=orgslug)
+- **URL Parameter Routing**: Works with subdomains, custom domains, or URL parameters (?org=orgslug)
 - **Flexible Development**: Supports localhost, IP addresses, and production domains
-- **Super Admin Portal**: System administration via ?org=admin
-- **Role-Based Access**: Members, Admins, Super-Admin roles
+- **Super Admin Portal**: System administration via ?org=admin or admin.yourdomain.com
+- **Role-Based Access**: Members, Admins, Super-Admin roles with granular permissions
 - **Responsive Design**: Mobile-first approach with Tailwind CSS
+
+### Membership Management
+- **Custom Signup Forms**: Dynamic form fields per organization
+- **Membership Types**: Flexible pricing and duration options
+- **Member Notes & History**: Color-coded admin notes on member profiles (general, admin, support, payment, behavior)
+- **Automated Reminders**: Email reminders for expiring memberships and upcoming events
+- **Member Badges/Achievements**: Manual and automatic award system with criteria
+- **CSV Export**: Export members, memberships, events, registrations, committees, and subscribers
+
+### Communications
+- **Email Templates Library**: Pre-built templates with variable system ({{first_name}}, {{last_name}}, etc.)
+- **Email Campaigns**: Integrated mailing list management via Resend
+- **In-App Notifications**: Real-time notification center with bell icon and unread counts
+- **Automated Workflows**: Welcome emails, renewal reminders, expiry notices
+
+### Events & Groups
+- **Event Registration**: RSVP system with capacity limits and waitlist
+- **Attendance Tracking**: Check-in functionality and attendance reports
+- **Committee/Group Management**: Roles and automatic mailing list synchronization
+- **Event Analytics**: Registration stats and attendance tracking
+
+### Analytics & Reporting
+- **Advanced Dashboard**: Charts and visualizations using Recharts
+- **Custom Report Builder**: Flexible filters and criteria
+- **Export Capabilities**: CSV export across all data views
+- **Member Analytics**: Membership trends and engagement metrics
+
+### Document Management
+- **Document Library**: Upload and share files (external URLs from Google Drive, Dropbox, etc.)
+- **Categories**: General, policy, form, guide, legal, financial, other
+- **Public/Private Visibility**: Control document access per organization
+- **Download Tracking**: Monitor document usage
+
+### Technical Features
 - **Supabase Integration**: PostgreSQL with Row Level Security (RLS)
+- **DNS Verification**: TXT record verification for custom domains (ACME standard)
+- **SSL Automation**: Certbot integration for automatic HTTPS via Let's Encrypt
+- **Priority Tenant Detection**: Custom domain → subdomain → URL parameter
 
 ## 🛠 Technology Stack
 
@@ -54,17 +93,49 @@ Get credentials from: https://app.supabase.com/project/_/settings/api
 
 ### 3. Database Setup
 
-In Supabase Dashboard → SQL Editor, run migrations in order:
-1. `supabase/migrations/20251001063749_20250929231345_bitter_cake.sql`
-2. `supabase/migrations/20251001063812_20250930111734_violet_valley.sql`
-3. `supabase/migrations/20251001063830_20250930115029_restless_fog.sql`
+**Important**: Run migrations in the correct order in Supabase Dashboard → SQL Editor:
 
-Then create organizations:
+1. **Core Schema** (Base tables, auth, organizations, memberships):
+   ```sql
+   -- Copy and run: supabase/migrations/20251001063749_20250929231345_bitter_cake.sql
+   ```
+
+2. **Email & Subscribers** (Email campaigns, mailing lists):
+   ```sql
+   -- Copy and run: supabase/migrations/20251001063812_20250930111734_violet_valley.sql
+   ```
+
+3. **Custom Domains** (Organization custom domain support):
+   ```sql
+   -- Copy and run: supabase/migrations/20251001063830_20250930115029_restless_fog.sql
+   ```
+
+4. **Events & Committees** (Event registration, RSVP, committees, groups):
+   ```sql
+   -- Copy and run: supabase_migration_event_registrations_committees.sql
+   ```
+
+5. **Phase 3 Advanced Features** (Analytics, badges, reports, automated reminders):
+   ```sql
+   -- Copy and run: supabase_migration_phase3_advanced_features.sql
+   ```
+
+6. **Phase 1 Quick Wins** (Email templates, member notes, notifications, documents):
+   ```sql
+   -- Copy and run: supabase_migration_phase1_quick_wins.sql
+   ```
+
+**⚠️ Migration Order is Critical**: Each migration depends on tables from previous migrations. Run them in the exact order above.
+
+### 4. Create Test Organizations (Optional)
+
+For testing and development:
 ```bash
 # Run setup-organizations.sql in Supabase SQL Editor
+# This creates sample organizations with slug-based access
 ```
 
-### 4. Development
+### 5. Development
 
 ```bash
 npm run dev
