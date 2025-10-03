@@ -103,5 +103,4 @@ FOR EACH ROW
 EXECUTE FUNCTION update_events_updated_at();
 
 COMMENT ON TABLE events IS 'Organization events and activities';
-COMMENT ON COLUMN events.max_attendees IS 'Maximum number of attendees (added by event_registrations migration)';
-COMMENT ON COLUMN events.current_attendees IS 'Current registered attendees count (added by event_registrations migration)';
+-- Note: max_attendees and current_attendees columns will be added by supabase_migration_event_registrations_committees.sql
