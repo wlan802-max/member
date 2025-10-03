@@ -10,8 +10,7 @@ APP_NAME="membership-system"
 APP_DIR="/var/www/$APP_NAME"
 APP_USER="membership"
 BACKUP_DIR="/var/backups/$APP_NAME"
-GIT_REPO="https://github.com/wlan802-max/member.git"  # Update this with your repo URL
-BRANCH="main"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -105,13 +104,19 @@ check_health() {
     error "Application health check failed after $max_attempts attempts"
 }
 
-# Update from Git repository
-update_from_git() {
-    log "Updating from Git repository..."
+# Update from local files
+update_from_local() {
+    log "Updating application from local files..."
     
-    cd "$APP_DIR"
+    # Check if we're in a valid source directory
+    if [ ! -f "$SCRIPT_DIR/package.json" ]; then
+        error "package.json not found in $SCRIPT_DIR. Please run this script from your project directory."
+    fi
     
-    # Preserve .env file before pulling
+    log "Copying files from: $SCRIPT_DIR"
+    log "To: $APP_DIR"
+    
+    # Preserve .env file
     local env_backup=""
     if [ -f "$APP_DIR/.env" ]; then
         env_backup=$(mktemp)
@@ -119,25 +124,23 @@ update_from_git() {
         log ".env file preserved in temporary location"
     fi
     
-    # Fetch latest changes
-    sudo -u $APP_USER git fetch origin
+    # Stop the application before updating
+    log "Stopping application..."
+    sudo -u $APP_USER pm2 stop $APP_NAME || true
     
-    # Check if there are updates
-    local local_commit=$(sudo -u $APP_USER git rev-parse HEAD)
-    local remote_commit=$(sudo -u $APP_USER git rev-parse origin/$BRANCH)
+    # Copy all files except excluded ones
+    log "Copying updated files..."
+    sudo rsync -av \
+        --exclude=node_modules \
+        --exclude=dist \
+        --exclude=.git \
+        --exclude=.env \
+        --exclude=*.log \
+        --exclude=.env.* \
+        --delete \
+        "$SCRIPT_DIR/" "$APP_DIR/"
     
-    if [ "$local_commit" = "$remote_commit" ]; then
-        info "No updates available. Current version is up to date."
-        [ -n "$env_backup" ] && sudo rm -f "$env_backup"
-        return 1
-    fi
-    
-    log "Updates available. Updating from $local_commit to $remote_commit"
-    
-    # Pull latest changes
-    sudo -u $APP_USER git pull origin $BRANCH
-    
-    # Restore .env file after pulling
+    # Restore .env file
     if [ -n "$env_backup" ] && [ -f "$env_backup" ]; then
         sudo cp "$env_backup" "$APP_DIR/.env"
         sudo chown $APP_USER:$APP_USER "$APP_DIR/.env"
@@ -145,21 +148,11 @@ update_from_git() {
         log ".env file restored after update"
     fi
     
-    return 0
-}
-
-# Update from local files (if no git repo)
-update_from_local() {
-    warn "Git repository not configured. Please manually copy your updated files to $APP_DIR"
-    warn "Make sure to:"
-    warn "1. Copy all source files"
-    warn "2. Preserve the .env file"
-    warn "3. Set correct ownership: sudo chown -R $APP_USER:$APP_USER $APP_DIR"
+    # Set correct ownership
+    sudo chown -R $APP_USER:$APP_USER "$APP_DIR"
     
-    read -p "Have you copied the updated files? (y/N): " confirm
-    if [[ ! $confirm =~ ^[Yy]$ ]]; then
-        error "Update cancelled. Please copy your files first."
-    fi
+    log "Files copied successfully"
+    return 0
 }
 
 # Install dependencies
@@ -270,15 +263,8 @@ main_update() {
     # Create backup
     create_backup
     
-    # Update source code
-    if [ -d "$APP_DIR/.git" ]; then
-        if ! update_from_git; then
-            log "No updates needed. Exiting."
-            exit 0
-        fi
-    else
-        update_from_local
-    fi
+    # Update source code from local directory
+    update_from_local
     
     # Install dependencies
     install_dependencies
