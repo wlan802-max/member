@@ -10,7 +10,7 @@ APP_NAME="membership-system"
 APP_DIR="/var/www/$APP_NAME"
 APP_USER="membership"
 BACKUP_DIR="/var/backups/$APP_NAME"
-GIT_REPO="https://github.com/your-username/membership-system.git"  # Update this with your repo URL
+GIT_REPO="https://github.com/wlan802-max/member.git"  # Update this with your repo URL
 BRANCH="main"
 
 # Colors for output
