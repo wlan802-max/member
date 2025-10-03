@@ -35,6 +35,7 @@ export interface FormField {
   allow_multiple?: boolean;
   maxRepeats?: number;
   fields?: FormField[];
+  link?: string;
   show_if?: {
     field_id: string;
     operator: 'equals' | 'not_equals' | 'contains';

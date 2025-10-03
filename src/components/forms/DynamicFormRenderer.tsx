@@ -190,18 +190,32 @@ export function DynamicFormRenderer({
 
       case 'checkbox':
         return (
-          <div key={field.id} className="flex items-start space-x-2">
+          <div key={field.id} className="flex items-start space-x-3 p-2 rounded hover:bg-accent/50 transition-colors">
             <Checkbox
               id={field.id}
               data-testid={`checkbox-${field.id}`}
               checked={!!value}
               onCheckedChange={(checked: boolean) => updateField(field.id, checked)}
-              className={error ? 'border-red-500' : ''}
+              className={`mt-1 ${error ? 'border-red-500' : ''}`}
             />
-            <div className="space-y-1">
-              <Label htmlFor={field.id} className="text-sm font-normal leading-none">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor={field.id} className="text-sm font-normal leading-relaxed cursor-pointer">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
+                {field.link && (
+                  <a 
+                    href={field.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="ml-1 text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    (View document)
+                  </a>
+                )}
               </Label>
+              {field.description && (
+                <p className="text-xs text-muted-foreground">{field.description}</p>
+              )}
               {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
           </div>
