@@ -1,0 +1,74 @@
+index-DRiyjUtG.js:64 Current hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Hostname parts: Array(5)
+index-DRiyjUtG.js:64 Production mode, detected subdomain: admin
+index-DRiyjUtG.js:64 useAuth: Starting auth check
+index-DRiyjUtG.js:64 Loading organization...
+index-DRiyjUtG.js:64 Checking if super admin subdomain for hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Production mode, is admin: true
+index-DRiyjUtG.js:64 Detected super admin subdomain
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
+index-DRiyjUtG.js:64 useAuth: getCurrentUser resolved with user: null
+index-DRiyjUtG.js:64 Current hostname: admin.m.ringing.org.uk
+index-DRiyjUtG.js:64 Hostname parts: Array(5)
+index-DRiyjUtG.js:64 Production mode, detected subdomain: admin
+index-DRiyjUtG.js:412 Super admin portal detected, user: null
+index-DRiyjUtG.js:412 No user, showing super admin auth
+index-DRiyjUtG.js:64 useAuth: Starting auth check
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
+index-DRiyjUtG.js:64 useAuth: getCurrentUser resolved with user: null
+index-DRiyjUtG.js:64 Getting profile for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+index-DRiyjUtG.js:64 Getting profile for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+index-DRiyjUtG.js:64 No profile found for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+getCurrentUser @ index-DRiyjUtG.js:64
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
+index-DRiyjUtG.js:64 No profile found for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+getCurrentUser @ index-DRiyjUtG.js:64
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
+index-DRiyjUtG.js:64 Getting profile for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+index-DRiyjUtG.js:64 Getting profile for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+index-DRiyjUtG.js:64 No profile found for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+getCurrentUser @ index-DRiyjUtG.js:64
+await in getCurrentUser
+(anonymous) @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+_notifyAllSubscribers @ index-DRiyjUtG.js:64
+signInWithPassword @ index-DRiyjUtG.js:63
+await in signInWithPassword
+signIn @ index-DRiyjUtG.js:64
+signIn @ index-DRiyjUtG.js:64
+u @ index-DRiyjUtG.js:412
+JM @ index-DRiyjUtG.js:37
+eD @ index-DRiyjUtG.js:37
+tD @ index-DRiyjUtG.js:37
+aj @ index-DRiyjUtG.js:37
+Yk @ index-DRiyjUtG.js:37
+(anonymous) @ index-DRiyjUtG.js:37
+Ux @ index-DRiyjUtG.js:40
+xk @ index-DRiyjUtG.js:37
+Sp @ index-DRiyjUtG.js:37
+px @ index-DRiyjUtG.js:37
+vD @ index-DRiyjUtG.js:37
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
+index-DRiyjUtG.js:64 No profile found for user: 195665a1-53ec-466d-b3b1-ba90d6d846e4
+getCurrentUser @ index-DRiyjUtG.js:64
+await in getCurrentUser
+(anonymous) @ index-DRiyjUtG.js:64
+(anonymous) @ index-DRiyjUtG.js:64
+_notifyAllSubscribers @ index-DRiyjUtG.js:64
+signInWithPassword @ index-DRiyjUtG.js:63
+await in signInWithPassword
+signIn @ index-DRiyjUtG.js:64
+signIn @ index-DRiyjUtG.js:64
+u @ index-DRiyjUtG.js:412
+JM @ index-DRiyjUtG.js:37
+eD @ index-DRiyjUtG.js:37
+tD @ index-DRiyjUtG.js:37
+aj @ index-DRiyjUtG.js:37
+Yk @ index-DRiyjUtG.js:37
+(anonymous) @ index-DRiyjUtG.js:37
+Ux @ index-DRiyjUtG.js:40
+xk @ index-DRiyjUtG.js:37
+Sp @ index-DRiyjUtG.js:37
+px @ index-DRiyjUtG.js:37
+vD @ index-DRiyjUtG.js:37
+index-DRiyjUtG.js:64 useAuth: Auth state changed, user: null
