@@ -267,7 +267,7 @@ SELECT
   s.id,
   ml.id,
   s.status,
-  s.subscribed_at
+  s.subscription_date
 FROM email_subscribers s
 JOIN mailing_lists ml ON ml.organization_id = s.organization_id AND ml.slug = 'general'
 WHERE s.status = 'subscribed'
