@@ -115,17 +115,22 @@ Get credentials from: https://app.supabase.com/project/_/settings/api
    -- Copy and run: supabase_migration_events_table.sql
    ```
 
-5. **Events & Committees** (Event registration, RSVP, committees, groups):
+5. **Mailing Lists** (Multiple mailing list support - REQUIRED for committees):
+   ```sql
+   -- Copy and run: supabase_migration_mailing_lists.sql
+   ```
+
+6. **Events & Committees** (Event registration, RSVP, committees, groups):
    ```sql
    -- Copy and run: supabase_migration_event_registrations_committees.sql
    ```
 
-6. **Phase 3 Advanced Features** (Analytics, badges, reports, automated reminders):
+7. **Phase 3 Advanced Features** (Analytics, badges, reports, automated reminders):
    ```sql
    -- Copy and run: supabase_migration_phase3_advanced_features.sql
    ```
 
-7. **Phase 1 Quick Wins** (Email templates, member notes, notifications, documents):
+8. **Phase 1 Quick Wins** (Email templates, member notes, notifications, documents):
    ```sql
    -- Copy and run: supabase_migration_phase1_quick_wins.sql
    ```
