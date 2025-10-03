@@ -148,13 +148,13 @@ CREATE POLICY "Users can view list subscriptions"
 ON subscriber_lists FOR SELECT
 USING (
   subscriber_id IN (
-    SELECT s.id FROM subscribers s
+    SELECT s.id FROM email_subscribers s
     JOIN profiles p ON p.email = s.email
     WHERE p.user_id = auth.uid()
   )
   OR
   EXISTS (
-    SELECT 1 FROM subscribers s
+    SELECT 1 FROM email_subscribers s
     JOIN mailing_lists ml ON ml.id = subscriber_lists.mailing_list_id
     JOIN profiles p ON p.organization_id = ml.organization_id
     WHERE s.id = subscriber_lists.subscriber_id
@@ -168,7 +168,7 @@ CREATE POLICY "Users can subscribe to lists"
 ON subscriber_lists FOR INSERT
 WITH CHECK (
   subscriber_id IN (
-    SELECT s.id FROM subscribers s
+    SELECT s.id FROM email_subscribers s
     JOIN profiles p ON p.email = s.email
     WHERE p.user_id = auth.uid()
   )
@@ -185,14 +185,14 @@ CREATE POLICY "Users can update their own subscriptions"
 ON subscriber_lists FOR UPDATE
 USING (
   subscriber_id IN (
-    SELECT s.id FROM subscribers s
+    SELECT s.id FROM email_subscribers s
     JOIN profiles p ON p.email = s.email
     WHERE p.user_id = auth.uid()
   )
 )
 WITH CHECK (
   subscriber_id IN (
-    SELECT s.id FROM subscribers s
+    SELECT s.id FROM email_subscribers s
     JOIN profiles p ON p.email = s.email
     WHERE p.user_id = auth.uid()
   )
@@ -203,7 +203,7 @@ CREATE POLICY "Admins can update org subscriptions"
 ON subscriber_lists FOR UPDATE
 USING (
   EXISTS (
-    SELECT 1 FROM subscribers s
+    SELECT 1 FROM email_subscribers s
     JOIN mailing_lists ml ON ml.id = subscriber_lists.mailing_list_id
     JOIN profiles p ON p.organization_id = ml.organization_id
     WHERE s.id = subscriber_lists.subscriber_id
@@ -213,7 +213,7 @@ USING (
 )
 WITH CHECK (
   EXISTS (
-    SELECT 1 FROM subscribers s
+    SELECT 1 FROM email_subscribers s
     JOIN mailing_lists ml ON ml.id = subscriber_lists.mailing_list_id
     JOIN profiles p ON p.organization_id = ml.organization_id
     WHERE s.id = subscriber_lists.subscriber_id
@@ -227,7 +227,7 @@ CREATE POLICY "Users can delete their own subscriptions"
 ON subscriber_lists FOR DELETE
 USING (
   subscriber_id IN (
-    SELECT s.id FROM subscribers s
+    SELECT s.id FROM email_subscribers s
     JOIN profiles p ON p.email = s.email
     WHERE p.user_id = auth.uid()
   )
@@ -238,7 +238,7 @@ CREATE POLICY "Admins can delete org subscriptions"
 ON subscriber_lists FOR DELETE
 USING (
   EXISTS (
-    SELECT 1 FROM subscribers s
+    SELECT 1 FROM email_subscribers s
     JOIN mailing_lists ml ON ml.id = subscriber_lists.mailing_list_id
     JOIN profiles p ON p.organization_id = ml.organization_id
     WHERE s.id = subscriber_lists.subscriber_id
@@ -268,7 +268,7 @@ SELECT
   ml.id,
   s.status,
   s.subscribed_at
-FROM subscribers s
+FROM email_subscribers s
 JOIN mailing_lists ml ON ml.organization_id = s.organization_id AND ml.slug = 'general'
 WHERE s.status = 'subscribed'
 AND NOT EXISTS (
