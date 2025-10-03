@@ -63,6 +63,12 @@ create_backup() {
     sudo mkdir -p "$BACKUP_DIR"
     sudo chown $APP_USER:$APP_USER "$BACKUP_DIR"
     
+    # Backup .env file separately
+    if [ -f "$APP_DIR/.env" ]; then
+        sudo cp "$APP_DIR/.env" "$BACKUP_DIR/.env.backup_$timestamp"
+        log ".env file backed up separately"
+    fi
+    
     # Create backup
     sudo tar -czf "$backup_file" \
         --exclude=node_modules \
@@ -105,6 +111,14 @@ update_from_git() {
     
     cd "$APP_DIR"
     
+    # Preserve .env file before pulling
+    local env_backup=""
+    if [ -f "$APP_DIR/.env" ]; then
+        env_backup=$(mktemp)
+        sudo cp "$APP_DIR/.env" "$env_backup"
+        log ".env file preserved in temporary location"
+    fi
+    
     # Fetch latest changes
     sudo -u $APP_USER git fetch origin
     
@@ -114,6 +128,7 @@ update_from_git() {
     
     if [ "$local_commit" = "$remote_commit" ]; then
         info "No updates available. Current version is up to date."
+        [ -n "$env_backup" ] && sudo rm -f "$env_backup"
         return 1
     fi
     
@@ -121,6 +136,14 @@ update_from_git() {
     
     # Pull latest changes
     sudo -u $APP_USER git pull origin $BRANCH
+    
+    # Restore .env file after pulling
+    if [ -n "$env_backup" ] && [ -f "$env_backup" ]; then
+        sudo cp "$env_backup" "$APP_DIR/.env"
+        sudo chown $APP_USER:$APP_USER "$APP_DIR/.env"
+        sudo rm -f "$env_backup"
+        log ".env file restored after update"
+    fi
     
     return 0
 }
@@ -228,9 +251,10 @@ show_status() {
         warn "❌ Application health check failed"
     fi
     
-    # SSL check
-    if curl -f -s "https://member.ringing.org.uk/health" > /dev/null 2>&1; then
-        log "✅ HTTPS is working"
+    # SSL check (get domain from .env or nginx config)
+    local domain=$(grep -oP 'server_name \K[^;*\s]+' /etc/nginx/sites-available/$APP_NAME 2>/dev/null | head -n1)
+    if [ -n "$domain" ] && curl -f -s "https://$domain/health" > /dev/null 2>&1; then
+        log "✅ HTTPS is working (https://$domain)"
     else
         warn "❌ HTTPS health check failed"
     fi
