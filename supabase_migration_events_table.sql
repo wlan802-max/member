@@ -59,7 +59,7 @@ CREATE POLICY "Admins can manage org events"
       SELECT 1 FROM profiles
       WHERE user_id = auth.uid()
       AND role = 'super_admin'
-      AND status = 'active'
+      AND is_active = true
     )
     OR
     -- Org admins can access their own organization
@@ -67,7 +67,7 @@ CREATE POLICY "Admins can manage org events"
       SELECT organization_id FROM profiles
       WHERE user_id = auth.uid()
       AND role = 'admin'
-      AND status = 'active'
+      AND is_active = true
     )
   )
   WITH CHECK (
@@ -76,7 +76,7 @@ CREATE POLICY "Admins can manage org events"
       SELECT 1 FROM profiles
       WHERE user_id = auth.uid()
       AND role = 'super_admin'
-      AND status = 'active'
+      AND is_active = true
     )
     OR
     -- Org admins can only create/update for their own organization
@@ -84,7 +84,7 @@ CREATE POLICY "Admins can manage org events"
       SELECT organization_id FROM profiles
       WHERE user_id = auth.uid()
       AND role = 'admin'
-      AND status = 'active'
+      AND is_active = true
     )
   );
 
