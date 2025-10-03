@@ -124,9 +124,14 @@ update_from_local() {
         log ".env file preserved in temporary location"
     fi
     
-    # Stop the application before updating
-    log "Stopping application..."
-    sudo -u $APP_USER pm2 stop $APP_NAME || true
+    # Stop the application before updating (if it's running)
+    log "Stopping application if running..."
+    if sudo -u $APP_USER pm2 describe $APP_NAME > /dev/null 2>&1; then
+        sudo -u $APP_USER pm2 stop $APP_NAME
+        log "Application stopped"
+    else
+        info "Application not running in PM2, skipping stop"
+    fi
     
     # Copy all files except excluded ones
     log "Copying updated files..."
