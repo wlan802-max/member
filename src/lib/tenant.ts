@@ -93,8 +93,8 @@ export const tenant = {
       return null
     }
 
-    // For production (subdomain.member.ringing.org.uk)
-    if (parts.length >= 4 && parts[parts.length - 4] === 'member') {
+    // For production (subdomain.m.ringing.org.uk or subdomain.member.ringing.org.uk)
+    if (parts.length >= 4 && (parts[parts.length - 4] === 'm' || parts[parts.length - 4] === 'member')) {
       const subdomain = parts[0]
       console.log('Production mode, detected subdomain:', subdomain)
       return subdomain
@@ -122,8 +122,8 @@ export const tenant = {
       return isAdmin
     }
 
-    // For production (admin.member.ringing.org.uk)
-    if (parts.length >= 4 && parts[parts.length - 4] === 'member') {
+    // For production (admin.m.ringing.org.uk or admin.member.ringing.org.uk)
+    if (parts.length >= 4 && (parts[parts.length - 4] === 'm' || parts[parts.length - 4] === 'member')) {
       const isAdmin = parts[0] === 'admin'
       console.log('Production mode, is admin:', isAdmin)
       return isAdmin
@@ -142,7 +142,7 @@ export const tenant = {
     if (hostname) {
       // Skip custom domain check for localhost, IP addresses, and known subdomains
       const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)
-      const isSubdomain = hostname.includes('.member.ringing.org.uk')
+      const isSubdomain = hostname.includes('.m.ringing.org.uk') || hostname.includes('.member.ringing.org.uk')
       
       if (!isLocalhost && !isSubdomain) {
         console.log('Checking if hostname is a custom domain:', hostname)
