@@ -1,0 +1,62 @@
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+index-D2x1M7QA.js:64 useAuth: Starting auth check
+index-D2x1M7QA.js:64 Loading organization...
+index-D2x1M7QA.js:64 Checking if super admin subdomain for hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Not super admin subdomain
+index-D2x1M7QA.js:64 Getting current organization...
+index-D2x1M7QA.js:64 Checking if super admin subdomain for hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Not super admin subdomain
+index-D2x1M7QA.js:64 Checking if hostname is a custom domain: m.ringing.org.uk
+index-D2x1M7QA.js:64 Getting organization for custom domain: m.ringing.org.uk
+index-D2x1M7QA.js:64 useAuth: Auth state changed, user: null
+index-D2x1M7QA.js:64 useAuth: getCurrentUser resolved with user: null
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+vcalbaxajffweiloftza.supabase.co/rest/v1/organization_domains?select=organization_id&domain=eq.m.ringing.org.uk&verification_status=eq.verified:1  Failed to load resource: the server responded with a status of 404 ()
+index-D2x1M7QA.js:64 Custom domain not found or not verified: Object
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+index-D2x1M7QA.js:64 Getting organization for subdomain: admin
+vcalbaxajffweiloftza.supabase.co/rest/v1/organizations?select=*&slug=eq.admin&is_active=eq.true:1  Failed to load resource: the server responded with a status of 406 ()
+index-D2x1M7QA.js:64 Organization not found: Object
+index-D2x1M7QA.js:64 Current organization result: null
+index-D2x1M7QA.js:64 No organization selected - will show selector
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+index-D2x1M7QA.js:64 useAuth: Starting auth check
+index-D2x1M7QA.js:64 Loading organization...
+index-D2x1M7QA.js:64 Checking if super admin subdomain for hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Not super admin subdomain
+index-D2x1M7QA.js:64 Getting current organization...
+index-D2x1M7QA.js:64 Checking if super admin subdomain for hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Not super admin subdomain
+index-D2x1M7QA.js:64 Checking if hostname is a custom domain: m.ringing.org.uk
+index-D2x1M7QA.js:64 Getting organization for custom domain: m.ringing.org.uk
+index-D2x1M7QA.js:64 useAuth: Auth state changed, user: null
+index-D2x1M7QA.js:64 useAuth: getCurrentUser resolved with user: null
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+vcalbaxajffweiloftza.supabase.co/rest/v1/organization_domains?select=organization_id&domain=eq.m.ringing.org.uk&verification_status=eq.verified:1  Failed to load resource: the server responded with a status of 404 ()
+index-D2x1M7QA.js:64 Custom domain not found or not verified: Object
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+index-D2x1M7QA.js:64 Getting organization for subdomain: admin
+vcalbaxajffweiloftza.supabase.co/rest/v1/organizations?select=*&slug=eq.admin&is_active=eq.true:1  Failed to load resource: the server responded with a status of 406 ()
+index-D2x1M7QA.js:64 Organization not found: Object
+index-D2x1M7QA.js:64 Current organization result: null
+index-D2x1M7QA.js:64 No organization selected - will show selector
+index-D2x1M7QA.js:64 Current hostname: m.ringing.org.uk
+index-D2x1M7QA.js:64 Hostname parts: Array(4)
+index-D2x1M7QA.js:64 Found org parameter: admin
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable
