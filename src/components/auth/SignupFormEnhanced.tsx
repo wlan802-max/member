@@ -33,6 +33,8 @@ export function SignupFormEnhanced({
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
 
   const { signUp } = useAuth();
 
@@ -294,11 +296,9 @@ export function SignupFormEnhanced({
         // Don't fail signup if email workflows fail
       }
 
-      toast.success('Account created successfully! Awaiting admin approval.');
-      
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      setSignupEmail(email);
+      setSignupSuccess(true);
+      toast.success('Account created successfully! Please check your email to verify your account.');
     } catch (err) {
       console.error('Signup error:', err);
       toast.error('An unexpected error occurred. Please try again.');
@@ -351,7 +351,41 @@ export function SignupFormEnhanced({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={onBackToLogin} variant="outline" className="w-full">
+            <Button onClick={onBackToLogin} variant="outline" className="w-full" data-testid="button-back-to-login">
+              Back to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (signupSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <CardTitle className="text-2xl">Account Created!</CardTitle>
+            <CardDescription className="mt-4 text-base">
+              We've sent a confirmation email to <strong>{signupEmail}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
+              <p className="font-medium">Next steps:</p>
+              <ol className="mt-2 list-decimal list-inside space-y-1">
+                <li>Check your email inbox (and spam folder)</li>
+                <li>Click the confirmation link in the email</li>
+                <li>You'll be redirected back to login</li>
+                <li>Your membership is pending admin approval</li>
+              </ol>
+            </div>
+            <Button onClick={onBackToLogin} className="w-full" data-testid="button-back-to-login-success">
               Back to Login
             </Button>
           </CardContent>

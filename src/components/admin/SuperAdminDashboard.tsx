@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase/client';
 import { Building2, Users, Plus, Search, Settings, Eye, CreditCard as Edit, Trash2, Globe, Mail, Phone, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Organization {
   id: string;
@@ -701,78 +702,175 @@ interface ViewOrganizationModalProps {
 }
 
 function ViewOrganizationModal({ organization, onClose }: ViewOrganizationModalProps) {
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'details' | 'members'>('details');
+
+  useEffect(() => {
+    fetchMembers();
+  }, [organization.id]);
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          memberships (
+            id,
+            status,
+            membership_year,
+            amount_paid,
+            organization_membership_types (
+              name,
+              code
+            )
+          )
+        `)
+        .eq('organization_id', organization.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const approveMember = async (membershipId: string) => {
+    try {
+      const { error } = await supabase
+        .from('memberships')
+        .update({ status: 'active' })
+        .eq('id', membershipId);
+
+      if (error) throw error;
+      
+      await fetchMembers();
+      toast.success('Member approved successfully');
+    } catch (error) {
+      console.error('Error approving member:', error);
+      toast.error('Failed to approve member');
+    }
+  };
+
+  const pendingMembers = members.filter(m => 
+    m.memberships?.some((membership: any) => membership.status === 'pending')
+  );
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="modal-view-organization">
-      <Card className="w-full max-w-2xl mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="modal-view-organization">
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <CardHeader>
           <CardTitle>{organization.name}</CardTitle>
-          <CardDescription>Organization Details</CardDescription>
+          <CardDescription>Organization Management</CardDescription>
+          <div className="flex gap-2 mt-4">
+            <Button 
+              variant={activeTab === 'details' ? 'default' : 'outline'} 
+              onClick={() => setActiveTab('details')}
+              data-testid="button-tab-details"
+            >
+              Details
+            </Button>
+            <Button 
+              variant={activeTab === 'members' ? 'default' : 'outline'} 
+              onClick={() => setActiveTab('members')}
+              data-testid="button-tab-members"
+            >
+              Members ({members.length})
+              {pendingMembers.length > 0 && (
+                <Badge variant="destructive" className="ml-2">{pendingMembers.length} pending</Badge>
+              )}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Slug</label>
-              <p className="mt-1" data-testid="text-org-slug">{organization.slug}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Domain</label>
-              <p className="mt-1" data-testid="text-org-domain">{organization.domain || 'Not set'}</p>
-            </div>
-          </div>
+        <CardContent className="flex-1 overflow-y-auto">
+          {activeTab === 'details' ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Slug</label>
+                  <p className="mt-1" data-testid="text-org-slug">{organization.slug}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Domain</label>
+                  <p className="mt-1" data-testid="text-org-domain">{organization.domain || 'Not set'}</p>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Contact Email</label>
-              <p className="mt-1" data-testid="text-org-email">{organization.contact_email}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Contact Phone</label>
-              <p className="mt-1" data-testid="text-org-phone">{organization.contact_phone || 'Not set'}</p>
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Contact Email</label>
+                  <p className="mt-1" data-testid="text-org-email">{organization.contact_email}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Contact Phone</label>
+                  <p className="mt-1" data-testid="text-org-phone">{organization.contact_phone || 'Not set'}</p>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Members</label>
-              <p className="mt-1" data-testid="text-org-members">{organization.member_count || 0}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Status</label>
-              <p className="mt-1">
-                <Badge variant={organization.is_active ? 'default' : 'secondary'} data-testid="badge-org-status">
-                  {organization.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Primary Color</label>
-              <div className="flex items-center gap-2 mt-1">
-                <div
-                  className="w-8 h-8 rounded border"
-                  style={{ backgroundColor: organization.primary_color }}
-                />
-                <span data-testid="text-org-primary-color">{organization.primary_color}</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Status</label>
+                  <p className="mt-1">
+                    <Badge variant={organization.is_active ? 'default' : 'secondary'} data-testid="badge-org-status">
+                      {organization.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </p>
+                </div>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Secondary Color</label>
-              <div className="flex items-center gap-2 mt-1">
-                <div
-                  className="w-8 h-8 rounded border"
-                  style={{ backgroundColor: organization.secondary_color }}
-                />
-                <span data-testid="text-org-secondary-color">{organization.secondary_color}</span>
-              </div>
+          ) : (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="text-center py-8">Loading members...</div>
+              ) : members.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">No members yet</div>
+              ) : (
+                <div className="space-y-2">
+                  {members.map((member) => (
+                    <div key={member.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{member.first_name} {member.last_name}</p>
+                          <p className="text-sm text-gray-600">{member.email}</p>
+                          {member.memberships && member.memberships.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {member.memberships.map((membership: any) => (
+                                <div key={membership.id} className="flex items-center gap-2">
+                                  <Badge variant={membership.status === 'active' ? 'default' : 'secondary'}>
+                                    {membership.status}
+                                  </Badge>
+                                  <span className="text-sm">
+                                    {membership.organization_membership_types?.name} - {membership.membership_year}
+                                  </span>
+                                  {membership.status === 'pending' && (
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => approveMember(membership.id)}
+                                      data-testid={`button-approve-${member.id}`}
+                                    >
+                                      Approve
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button onClick={onClose} data-testid="button-close-view">Close</Button>
-          </div>
+          )}
         </CardContent>
+        <div className="p-6 border-t flex justify-end">
+          <Button onClick={onClose} data-testid="button-close-view">Close</Button>
+        </div>
       </Card>
     </div>
   );
