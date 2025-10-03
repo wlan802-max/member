@@ -455,26 +455,73 @@ deploy_application() {
         error "No git repository found. Please run this script from your project directory or provide a git repository URL."
     fi
     
-    # Create environment file
+    # Create environment file with interactive prompts
     if [ ! -f "$APP_DIR/.env" ]; then
-        log "Creating environment file..."
+        log ""
+        log "========================================="
+        log "  Environment Configuration"
+        log "========================================="
+        log ""
+        log "Please provide your service credentials."
+        log "These are required for the application to function."
+        log ""
+        
+        # Prompt for Supabase URL
+        echo "1. Supabase Configuration"
+        echo "   Get your credentials from: https://app.supabase.com/project/_/settings/api"
+        echo ""
+        read -p "   Enter your Supabase URL (e.g., https://xxxxx.supabase.co): " SUPABASE_URL
+        while [ -z "$SUPABASE_URL" ]; do
+            warn "   Supabase URL is required!"
+            read -p "   Enter your Supabase URL: " SUPABASE_URL
+        done
+        
+        # Prompt for Supabase Anon Key (hidden input)
+        echo ""
+        read -s -p "   Enter your Supabase Anon Key (hidden): " SUPABASE_ANON_KEY
+        echo ""
+        while [ -z "$SUPABASE_ANON_KEY" ]; do
+            warn "   Supabase Anon Key is required!"
+            read -s -p "   Enter your Supabase Anon Key (hidden): " SUPABASE_ANON_KEY
+            echo ""
+        done
+        
+        # Prompt for Resend API Key (hidden input)
+        echo ""
+        echo "2. Resend Email Configuration"
+        echo "   Get your API key from: https://resend.com/api-keys"
+        echo ""
+        read -s -p "   Enter your Resend API Key (hidden, or press Enter to skip): " RESEND_KEY
+        echo ""
+        
+        # Set default if not provided
+        if [ -z "$RESEND_KEY" ]; then
+            RESEND_KEY="your_resend_api_key_here"
+            warn "   Resend API key not provided - email features will not work until configured"
+        fi
+        
+        log ""
+        log "Creating environment file with your configuration..."
+        
         sudo -u $APP_USER tee $APP_DIR/.env > /dev/null <<EOF
 # Application Configuration
 NODE_ENV=production
 PORT=$PORT
 
-# Supabase Configuration (REPLACE WITH YOUR ACTUAL VALUES)
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+# Supabase Configuration
+VITE_SUPABASE_URL=$SUPABASE_URL
+VITE_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
 
-# Resend Email Configuration (REPLACE WITH YOUR ACTUAL KEY)
-RESEND_API_KEY=re_your_resend_api_key
+# Resend Email Configuration
+RESEND_API_KEY=$RESEND_KEY
 
 # Replit Connectors (if using Replit integrations)
 REPLIT_CONNECTORS_HOSTNAME=connectors.replit.com
 EOF
-        warn "IMPORTANT: Please edit $APP_DIR/.env with your actual configuration values!"
-        warn "Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, RESEND_API_KEY"
+        
+        log "Environment file created successfully at $APP_DIR/.env"
+    else
+        log "Environment file already exists at $APP_DIR/.env, skipping"
     fi
     
     # Install dependencies
@@ -694,11 +741,7 @@ main() {
     log ""
     log "📋 NEXT STEPS:"
     log ""
-    log "1. Configure Environment Variables"
-    log "   Edit: $APP_DIR/.env"
-    log "   Set: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, RESEND_API_KEY"
-    log ""
-    log "2. Setup Supabase Database"
+    log "1. Setup Supabase Database"
     log "   Run migrations in Supabase SQL Editor in this order:"
     log "   a) supabase/migrations/20251001063749_20250929231345_bitter_cake.sql"
     log "   b) supabase/migrations/20251001063812_20250930111734_violet_valley.sql"
@@ -707,15 +750,12 @@ main() {
     log "   e) supabase_migration_phase3_advanced_features.sql"
     log "   f) supabase_migration_phase1_quick_wins.sql"
     log ""
-    log "3. Restart Application"
-    log "   sudo -u $APP_USER pm2 restart $APP_NAME"
-    log ""
-    log "4. Configure DNS"
+    log "2. Configure DNS"
     log "   Point A records to this server:"
     log "   - $DOMAIN → $(curl -s ifconfig.me)"
     log "   - *.$DOMAIN → $(curl -s ifconfig.me) (wildcard for subdomains)"
     log ""
-    log "5. Access Your Application"
+    log "3. Access Your Application"
     log "   - Main site: https://$DOMAIN"
     log "   - Super Admin: https://admin.$DOMAIN"
     log "   - Organization: https://orgslug.$DOMAIN"
@@ -723,7 +763,7 @@ main() {
     log ""
     log "📁 IMPORTANT FILES:"
     log "   - App directory: $APP_DIR"
-    log "   - Environment: $APP_DIR/.env"
+    log "   - Environment: $APP_DIR/.env (✅ configured during deployment)"
     log "   - Nginx config: /etc/nginx/sites-available/$APP_NAME"
     log "   - PM2 config: $APP_DIR/ecosystem.config.cjs"
     log "   - Logs: /var/log/$APP_NAME/"
@@ -742,7 +782,9 @@ main() {
     log "   - Manage: sudo manage-custom-domain [add|remove|ssl|list] <domain>"
     log "   - Docs: /opt/custom-domains/CUSTOM_DOMAINS_SETUP.md"
     log ""
-    log "✅ Deployment complete! Edit .env and restart the app to get started."
+    log "✅ Deployment complete! Your application is configured and ready to use."
+    log ""
+    log "⚠️  IMPORTANT: Run the Supabase migrations before accessing the application!"
     log ""
 }
 
