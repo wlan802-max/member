@@ -1,0 +1,36 @@
+index-CXvGOprI.js:64 Current hostname: admin.m.ringing.org.uk
+index-CXvGOprI.js:64 Hostname parts: Array(5)
+index-CXvGOprI.js:64 Production mode, detected subdomain: admin
+index-CXvGOprI.js:64 useAuth: Starting auth check
+index-CXvGOprI.js:64 Loading organization...
+index-CXvGOprI.js:64 Checking if super admin subdomain for hostname: admin.m.ringing.org.uk
+index-CXvGOprI.js:64 Production mode, is admin: true
+index-CXvGOprI.js:64 Detected super admin subdomain
+index-CXvGOprI.js:64 Current hostname: admin.m.ringing.org.uk
+index-CXvGOprI.js:64 Hostname parts: Array(5)
+index-CXvGOprI.js:64 Production mode, detected subdomain: admin
+index-CXvGOprI.js:64 useAuth: Auth state changed, user: null
+index-CXvGOprI.js:64 useAuth: getCurrentUser resolved with user: null
+index-CXvGOprI.js:64 Current hostname: admin.m.ringing.org.uk
+index-CXvGOprI.js:64 Hostname parts: Array(5)
+index-CXvGOprI.js:64 Production mode, detected subdomain: admin
+index-CXvGOprI.js:412 Super admin portal detected, user: null
+index-CXvGOprI.js:412 No user, showing super admin auth
+index-CXvGOprI.js:64 useAuth: Starting auth check
+index-CXvGOprI.js:64 useAuth: Auth state changed, user: null
+index-CXvGOprI.js:64 useAuth: getCurrentUser resolved with user: null
+(index):1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+index-CXvGOprI.js:64 Getting profile for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+index-CXvGOprI.js:64 Getting profile for user: 2ec01ed0-5f33-431f-a839-e4aacb69b2b9
+vcalbaxajffweiloftza.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cstatus%2Corganization_id&user_id=eq.2ec01ed0-5f33-431f-a839-e4aacb69b2b9:1  Failed to load resource: the server responded with a status of 400 ()
+index-CXvGOprI.js:64 Error loading profile: Object
+getCurrentUser @ index-CXvGOprI.js:64
+index-CXvGOprI.js:64 useAuth: Auth state changed, user: null
+vcalbaxajffweiloftza.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cstatus%2Corganization_id&user_id=eq.2ec01ed0-5f33-431f-a839-e4aacb69b2b9:1  Failed to load resource: the server responded with a status of 400 ()
+index-CXvGOprI.js:64 Error loading profile: Object
+getCurrentUser @ index-CXvGOprI.js:64
+index-CXvGOprI.js:64 useAuth: Auth state changed, user: null
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable

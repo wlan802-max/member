@@ -8,7 +8,7 @@ export interface User {
     first_name: string
     last_name: string
     role: string
-    status: 'pending' | 'active' | 'suspended' | 'rejected'
+    is_active: boolean
     organization?: {
       id: string
       name: string
@@ -58,7 +58,7 @@ export const auth = {
     // Get user profile first
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, role, status, organization_id')
+      .select('id, first_name, last_name, role, is_active, organization_id')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -99,7 +99,7 @@ export const auth = {
         first_name: profile.first_name,
         last_name: profile.last_name,
         role: profile.role,
-        status: profile.status,
+        is_active: profile.is_active,
         organization
       }
     }
