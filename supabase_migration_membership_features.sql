@@ -80,7 +80,7 @@ CREATE POLICY "Admins can manage org memberships"
       SELECT 1 FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'super_admin'
-      AND status = 'active'
+      AND is_active = true
     )
     OR
     -- Org admins can access their own organization
@@ -88,7 +88,7 @@ CREATE POLICY "Admins can manage org memberships"
       SELECT organization_id FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'admin'
-      AND status = 'active'
+      AND is_active = true
     )
   )
   WITH CHECK (
@@ -97,7 +97,7 @@ CREATE POLICY "Admins can manage org memberships"
       SELECT 1 FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'super_admin'
-      AND status = 'active'
+      AND is_active = true
     )
     OR
     -- Org admins can only create/update for their own organization
@@ -105,7 +105,7 @@ CREATE POLICY "Admins can manage org memberships"
       SELECT organization_id FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'admin'
-      AND status = 'active'
+      AND is_active = true
     )
   );
 
@@ -154,7 +154,7 @@ CREATE POLICY "Admins can manage email workflows"
       SELECT 1 FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'super_admin'
-      AND status = 'active'
+      AND is_active = true
     )
     OR
     -- Org admins can access their own organization
@@ -162,7 +162,7 @@ CREATE POLICY "Admins can manage email workflows"
       SELECT organization_id FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'admin'
-      AND status = 'active'
+      AND is_active = true
     )
   )
   WITH CHECK (
@@ -171,7 +171,7 @@ CREATE POLICY "Admins can manage email workflows"
       SELECT 1 FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'super_admin'
-      AND status = 'active'
+      AND is_active = true
     )
     OR
     -- Org admins can only create/update for their own organization
@@ -179,7 +179,7 @@ CREATE POLICY "Admins can manage email workflows"
       SELECT organization_id FROM public.profiles 
       WHERE user_id = auth.uid() 
       AND role = 'admin'
-      AND status = 'active'
+      AND is_active = true
     )
   );
 
