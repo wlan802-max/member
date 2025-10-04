@@ -1,0 +1,57 @@
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 useAuth: Starting auth check
+index-CbVt_dtG.js:64 Loading organization...
+index-CbVt_dtG.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Production mode, is admin: false
+index-CbVt_dtG.js:64 Getting current organization...
+index-CbVt_dtG.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Production mode, is admin: false
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 Getting organization for subdomain: frps
+index-CbVt_dtG.js:64 useAuth: Auth state changed, user: null
+index-CbVt_dtG.js:64 useAuth: getCurrentUser resolved with user: null
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 Found organization: Object
+index-CbVt_dtG.js:64 Current organization result: Object
+index-CbVt_dtG.js:64 Organization found: frps
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 useAuth: Starting auth check
+index-CbVt_dtG.js:64 Loading organization...
+index-CbVt_dtG.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Production mode, is admin: false
+index-CbVt_dtG.js:64 Getting current organization...
+index-CbVt_dtG.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Production mode, is admin: false
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 Getting organization for subdomain: frps
+index-CbVt_dtG.js:64 useAuth: Auth state changed, user: null
+index-CbVt_dtG.js:64 useAuth: getCurrentUser resolved with user: null
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 Found organization: Object
+index-CbVt_dtG.js:64 Current organization result: Object
+index-CbVt_dtG.js:64 Organization found: frps
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 Current hostname: frps.m.ringing.org.uk
+index-CbVt_dtG.js:64 Hostname parts: Array(5)
+index-CbVt_dtG.js:64 Production mode, detected subdomain: frps
+index-CbVt_dtG.js:64 useAuth: Starting auth check
+index-CbVt_dtG.js:64 useAuth: Auth state changed, user: null
+index-CbVt_dtG.js:64 useAuth: getCurrentUser resolved with user: null
+vcalbaxajffweiloftza.supabase.co/auth/v1/signup:1  Failed to load resource: the server responded with a status of 400 ()

@@ -142,6 +142,8 @@ export function SignupFormEnhanced({
     }
 
     try {
+      console.log('Attempting signup with:', { email, firstName, lastName, organizationSlug });
+      
       const { data: authData, error: authError } = await signUp(email, password, {
         first_name: firstName,
         last_name: lastName,
@@ -149,9 +151,17 @@ export function SignupFormEnhanced({
       });
 
       if (authError) {
-        toast.error(authError.message);
+        console.error('Signup error:', authError);
+        console.error('Error details:', {
+          message: authError.message,
+          status: authError.status,
+          code: (authError as any).code
+        });
+        toast.error(authError.message || 'Failed to create account. Please try again.');
         return;
       }
+
+      console.log('Signup successful, auth data:', authData);
 
       toast.info('Creating your profile...');
       const profileId = await waitForProfile(email);
