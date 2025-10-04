@@ -1,0 +1,73 @@
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 Loading organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Getting current organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Getting organization for subdomain: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Found organization: {id: 'dd554146-46b9-489f-abce-20497ccc4624', slug: 'frps', name: 'frps', domain: 'frps.member.ringing.org.uk', logo_url: null, …}
+index-duLdrTmK.js:64 Current organization result: {id: 'dd554146-46b9-489f-abce-20497ccc4624', slug: 'frps', name: 'frps', domain: 'frps.member.ringing.org.uk', logo_url: null, …}
+index-duLdrTmK.js:64 Organization found: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 Loading organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Getting current organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Getting organization for subdomain: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Found organization: {id: 'dd554146-46b9-489f-abce-20497ccc4624', slug: 'frps', name: 'frps', domain: 'frps.member.ringing.org.uk', logo_url: null, …}
+index-duLdrTmK.js:64 Current organization result: {id: 'dd554146-46b9-489f-abce-20497ccc4624', slug: 'frps', name: 'frps', domain: 'frps.member.ringing.org.uk', logo_url: null, …}
+index-duLdrTmK.js:64 Organization found: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: null
+index-duLdrTmK.js:274 Attempting signup with: {email: 'will@ringing.org.uk', firstName: 'frps', lastName: 'admin', organizationSlug: 'frps'}
+index-duLdrTmK.js:274 Signup successful, auth data: {user: {…}, session: null}
+index-duLdrTmK.js:274 Profile not found after retries
+D @ index-duLdrTmK.js:274
+await in D
+x @ index-duLdrTmK.js:274
+JM @ index-duLdrTmK.js:37
+eD @ index-duLdrTmK.js:37
+tD @ index-duLdrTmK.js:37
+aj @ index-duLdrTmK.js:37
+Yk @ index-duLdrTmK.js:37
+(anonymous) @ index-duLdrTmK.js:37
+Ux @ index-duLdrTmK.js:40
+xk @ index-duLdrTmK.js:37
+Sp @ index-duLdrTmK.js:37
+px @ index-duLdrTmK.js:37
+vD @ index-duLdrTmK.js:37
