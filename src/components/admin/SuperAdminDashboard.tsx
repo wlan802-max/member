@@ -712,6 +712,8 @@ function ViewOrganizationModal({ organization, onClose }: ViewOrganizationModalP
 
   const fetchMembers = async () => {
     try {
+      console.log('Fetching members for organization:', organization.id, organization.name);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -730,7 +732,13 @@ function ViewOrganizationModal({ organization, onClose }: ViewOrganizationModalP
         .eq('organization_id', organization.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('Members fetch result:', { data, error, count: data?.length });
+
+      if (error) {
+        console.error('Supabase error fetching members:', error);
+        throw error;
+      }
+      
       setMembers(data || []);
     } catch (error) {
       console.error('Error fetching members:', error);
