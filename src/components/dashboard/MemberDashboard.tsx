@@ -1340,7 +1340,7 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
         .from('profiles')
         .select('*')
         .eq('organization_id', organizationId)
-        .eq('status', 'active')
+        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -1354,11 +1354,18 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   const fetchPendingUsers = async () => {
     try {
+      // Fetch users with pending memberships
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          memberships!inner (
+            id,
+            status
+          )
+        `)
         .eq('organization_id', organizationId)
-        .eq('status', 'pending')
+        .eq('memberships.status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -1384,17 +1391,25 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   const handleApproveUser = async (userId: string, role: 'member' | 'admin' = 'member') => {
     try {
-      const { error } = await supabase
+      // Update profile to be active
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          status: 'active',
           is_active: true,
-          role: role,
-          status_updated_at: new Date().toISOString()
+          role: role
         })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Update any pending memberships to active
+      const { error: membershipError } = await supabase
+        .from('memberships')
+        .update({ status: 'active' })
+        .eq('profile_id', userId)
+        .eq('status', 'pending');
+
+      if (membershipError) throw membershipError;
 
       toast.success('User approved successfully');
       await fetchMembers();
@@ -1407,17 +1422,24 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   const handleRejectUser = async (userId: string, reason: string = '') => {
     try {
-      const { error } = await supabase
+      // Deactivate the profile
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          status: 'rejected',
-          is_active: false,
-          rejection_note: reason,
-          status_updated_at: new Date().toISOString()
+          is_active: false
         })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Cancel any pending memberships
+      const { error: membershipError } = await supabase
+        .from('memberships')
+        .update({ status: 'cancelled' })
+        .eq('profile_id', userId)
+        .eq('status', 'pending');
+
+      if (membershipError) throw membershipError;
 
       toast.success('User rejected');
       await fetchPendingUsers();
