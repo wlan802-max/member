@@ -1,0 +1,565 @@
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: getCurrentUser resolved with user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: getCurrentUser resolved with user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: getCurrentUser resolved with user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: getCurrentUser resolved with user: will@w-j-lander.uk
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ useAuth: Auth state changed, user: null
+ useAuth: Auth state changed, user: null
+ useAuth: Auth state changed, user: null
+ useAuth: Auth state changed, user: null
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ useAuth: Auth state changed, user: null
+ useAuth: getCurrentUser resolved with user: null
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: getCurrentUser resolved with user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: getCurrentUser resolved with user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: Auth state changed, user: will@w-j-lander.uk
+ Profile loaded: Object
+ No organization_id (likely super admin)
+ useAuth: getCurrentUser resolved with user: will@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Auth state changed, user: null
+ useAuth: Auth state changed, user: null
+ useAuth: Auth state changed, user: null
+ useAuth: Auth state changed, user: null
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ useAuth: Auth state changed, user: null
+ useAuth: getCurrentUser resolved with user: null
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+ Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+ Profile loaded: Object
+ Profile loaded: Object
+ Organization loaded: frps
+ useAuth: Auth state changed, user: will@ringing.org.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Organization loaded: frps
+ useAuth: Auth state changed, user: will@ringing.org.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+ Found organization: Object
+ Current organization result: Object
+ Organization found: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+index-duLdrTmK.js:64 Found organization: Object
+index-duLdrTmK.js:64 Current organization result: Object
+index-duLdrTmK.js:64 Organization found: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Profile loaded: Object
+index-duLdrTmK.js:64 Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+index-duLdrTmK.js:64 Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+index-duLdrTmK.js:64 Organization loaded: frps
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: will@ringing.org.uk
+index-duLdrTmK.js:64 Profile loaded: Object
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Profile loaded: Object
+index-duLdrTmK.js:64 Organization loaded: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: will@ringing.org.uk
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 Profile loaded: Object
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Organization loaded: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: will@ringing.org.uk
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Organization loaded: frps
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: will@ringing.org.uk
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+index-duLdrTmK.js:64 Getting profile for user: 3e44703e-749c-49b8-b3f0-dadd3216da00
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Profile loaded: Object
+index-duLdrTmK.js:64 Organization loaded: frps
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: will@ringing.org.uk
+index-duLdrTmK.js:64 Profile loaded: Object
+index-duLdrTmK.js:64 Organization loaded: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: will@ringing.org.uk
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 Loading organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Getting current organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Getting organization for subdomain: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Found organization: Object
+index-duLdrTmK.js:64 Current organization result: Object
+index-duLdrTmK.js:64 Organization found: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: null
+index-duLdrTmK.js:274 Attempting signup with: Object
+vcalbaxajffweiloftza.supabase.co/auth/v1/signup:1  Failed to load resource: the server responded with a status of 400 ()
+index-duLdrTmK.js:274 Signup error: AuthApiError: Email address "james@w-j-lnader.uk" is invalid
+    at h_ (index-duLdrTmK.js:63:8269)
+    at async sI (index-duLdrTmK.js:63:9258)
+    at async Me (index-duLdrTmK.js:63:8919)
+    at async yI.signUp (index-duLdrTmK.js:63:21599)
+    at async Object.signUp (index-duLdrTmK.js:64:34660)
+    at async signUp (index-duLdrTmK.js:64:36532)
+    at async D (index-duLdrTmK.js:274:77514)
+    at async x (index-duLdrTmK.js:274:35462)
+D @ index-duLdrTmK.js:274
+index-duLdrTmK.js:274 Error details: Object
+D @ index-duLdrTmK.js:274
