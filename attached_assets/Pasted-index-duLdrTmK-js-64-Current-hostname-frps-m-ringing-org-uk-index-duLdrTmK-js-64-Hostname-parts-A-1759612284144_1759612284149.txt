@@ -1,0 +1,133 @@
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 Loading organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Getting current organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Getting organization for subdomain: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Found organization: Object
+index-duLdrTmK.js:64 Current organization result: Object
+index-duLdrTmK.js:64 Organization found: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 useAuth: Starting auth check
+index-duLdrTmK.js:64 Loading organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Getting current organization...
+index-duLdrTmK.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Production mode, is admin: false
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Getting organization for subdomain: frps
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 useAuth: getCurrentUser resolved with user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Found organization: Object
+index-duLdrTmK.js:64 Current organization result: Object
+index-duLdrTmK.js:64 Organization found: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: Array(5)
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:64 Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+index-duLdrTmK.js:64 Getting profile for user: f21db030-0d5f-4069-a367-f1965c3b4b5a
+index-duLdrTmK.js:62  GET https://vcalbaxajffweiloftza.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cis_active%2Corganization_id&user_id=eq.f21db030-0d5f-4069-a367-f1965c3b4b5a 500 (Internal Server Error)
+(anonymous) @ index-duLdrTmK.js:62
+(anonymous) @ index-duLdrTmK.js:62
+l @ index-duLdrTmK.js:62
+Promise.then
+u @ index-duLdrTmK.js:62
+(anonymous) @ index-duLdrTmK.js:62
+yL @ index-duLdrTmK.js:62
+(anonymous) @ index-duLdrTmK.js:62
+then @ index-duLdrTmK.js:40
+index-duLdrTmK.js:64 Error loading profile: {code: '42P17', details: null, hint: null, message: 'infinite recursion detected in policy for relation "profiles"'}
+getCurrentUser @ index-duLdrTmK.js:64
+await in getCurrentUser
+(anonymous) @ index-duLdrTmK.js:64
+(anonymous) @ index-duLdrTmK.js:64
+_notifyAllSubscribers @ index-duLdrTmK.js:64
+signInWithPassword @ index-duLdrTmK.js:63
+await in signInWithPassword
+signIn @ index-duLdrTmK.js:64
+signIn @ index-duLdrTmK.js:64
+x @ index-duLdrTmK.js:274
+JM @ index-duLdrTmK.js:37
+eD @ index-duLdrTmK.js:37
+tD @ index-duLdrTmK.js:37
+aj @ index-duLdrTmK.js:37
+Yk @ index-duLdrTmK.js:37
+(anonymous) @ index-duLdrTmK.js:37
+Ux @ index-duLdrTmK.js:40
+xk @ index-duLdrTmK.js:37
+Sp @ index-duLdrTmK.js:37
+px @ index-duLdrTmK.js:37
+vD @ index-duLdrTmK.js:37
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
+index-duLdrTmK.js:62  GET https://vcalbaxajffweiloftza.supabase.co/rest/v1/profiles?select=id%2Cfirst_name%2Clast_name%2Crole%2Cis_active%2Corganization_id&user_id=eq.f21db030-0d5f-4069-a367-f1965c3b4b5a 500 (Internal Server Error)
+(anonymous) @ index-duLdrTmK.js:62
+(anonymous) @ index-duLdrTmK.js:62
+l @ index-duLdrTmK.js:62
+Promise.then
+u @ index-duLdrTmK.js:62
+(anonymous) @ index-duLdrTmK.js:62
+yL @ index-duLdrTmK.js:62
+(anonymous) @ index-duLdrTmK.js:62
+then @ index-duLdrTmK.js:40
+index-duLdrTmK.js:64 Error loading profile: {code: '42P17', details: null, hint: null, message: 'infinite recursion detected in policy for relation "profiles"'}
+getCurrentUser @ index-duLdrTmK.js:64
+await in getCurrentUser
+(anonymous) @ index-duLdrTmK.js:64
+(anonymous) @ index-duLdrTmK.js:64
+_notifyAllSubscribers @ index-duLdrTmK.js:64
+signInWithPassword @ index-duLdrTmK.js:63
+await in signInWithPassword
+signIn @ index-duLdrTmK.js:64
+signIn @ index-duLdrTmK.js:64
+x @ index-duLdrTmK.js:274
+JM @ index-duLdrTmK.js:37
+eD @ index-duLdrTmK.js:37
+tD @ index-duLdrTmK.js:37
+aj @ index-duLdrTmK.js:37
+Yk @ index-duLdrTmK.js:37
+(anonymous) @ index-duLdrTmK.js:37
+Ux @ index-duLdrTmK.js:40
+xk @ index-duLdrTmK.js:37
+Sp @ index-duLdrTmK.js:37
+px @ index-duLdrTmK.js:37
+vD @ index-duLdrTmK.js:37
+index-duLdrTmK.js:64 useAuth: Auth state changed, user: null
+index-duLdrTmK.js:64 Current hostname: frps.m.ringing.org.uk
+index-duLdrTmK.js:64 Hostname parts: (5) ['frps', 'm', 'ringing', 'org', 'uk']
+index-duLdrTmK.js:64 Production mode, detected subdomain: frps
