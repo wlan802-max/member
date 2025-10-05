@@ -81,35 +81,6 @@ export function MemberDashboard() {
   const [showRenewalModal, setShowRenewalModal] = useState(false)
   const [exportingMemberships, setExportingMemberships] = useState(false)
 
-  // Documents state
-  const [documents, setDocuments] = useState<any[]>([])
-  const [documentsLoading, setDocumentsLoading] = useState(false)
-  const [showUploadModal, setShowUploadModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedDocument, setSelectedDocument] = useState<any>(null)
-  const [documentSearchTerm, setDocumentSearchTerm] = useState('')
-  const [documentCategoryFilter, setDocumentCategoryFilter] = useState<string>('all')
-  const [uploadingDocument, setUploadingDocument] = useState(false)
-  
-  // Upload form state
-  const [uploadForm, setUploadForm] = useState({
-    name: '',
-    description: '',
-    file_url: '',
-    file_type: '',
-    file_size: 0,
-    category: 'general' as 'general' | 'policy' | 'form' | 'guide' | 'legal' | 'financial' | 'other',
-    is_public: true
-  })
-
-  // Edit form state
-  const [editForm, setEditForm] = useState({
-    name: '',
-    description: '',
-    category: 'general' as 'general' | 'policy' | 'form' | 'guide' | 'legal' | 'financial' | 'other',
-    is_public: true
-  })
-
   useEffect(() => {
     // Check URL hash for navigation
     const hash = window.location.hash.replace('#', '')
@@ -229,206 +200,6 @@ export function MemberDashboard() {
     }
   }
 
-  // Document helper functions
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
-  }
-
-  const getFileTypeIcon = (fileType: string | null) => {
-    if (!fileType) return FileText
-    const type = fileType.toLowerCase()
-    if (type.includes('pdf')) return FileText
-    if (type.includes('xls') || type.includes('sheet')) return FileSpreadsheet
-    if (type.includes('doc')) return FileText
-    return File
-  }
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      general: 'bg-gray-100 text-gray-800',
-      policy: 'bg-blue-100 text-blue-800',
-      form: 'bg-green-100 text-green-800',
-      guide: 'bg-purple-100 text-purple-800',
-      legal: 'bg-red-100 text-red-800',
-      financial: 'bg-yellow-100 text-yellow-800',
-      other: 'bg-gray-100 text-gray-800'
-    }
-    return colors[category as keyof typeof colors] || colors.other
-  }
-
-  // Fetch documents
-  useEffect(() => {
-    if (activeView === 'documents' || activeView === 'admin-documents') {
-      fetchDocuments()
-    }
-  }, [activeView, organization])
-
-  const fetchDocuments = async () => {
-    if (!organization?.id) return
-
-    setDocumentsLoading(true)
-    try {
-      let query = supabase
-        .from('documents')
-        .select(`
-          *,
-          uploader:profiles!documents_uploaded_by_fkey(first_name, last_name)
-        `)
-        .eq('organization_id', organization.id)
-        .order('created_at', { ascending: false })
-
-      // If not admin, only show public documents
-      if (!isAdmin && activeView === 'documents') {
-        query = query.eq('is_public', true)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-      setDocuments(data || [])
-    } catch (error: any) {
-      console.error('Error fetching documents:', error)
-      toast.error('Failed to load documents')
-    } finally {
-      setDocumentsLoading(false)
-    }
-  }
-
-  // Upload document
-  const handleUploadDocument = async () => {
-    if (!uploadForm.name || !uploadForm.file_url || !organization?.id || !user?.profile?.id) {
-      toast.error('Please fill in all required fields')
-      return
-    }
-
-    if (uploadForm.file_size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB')
-      return
-    }
-
-    setUploadingDocument(true)
-    try {
-      const { error } = await supabase.from('documents').insert({
-        organization_id: organization.id,
-        name: uploadForm.name,
-        description: uploadForm.description,
-        file_url: uploadForm.file_url,
-        file_type: uploadForm.file_type,
-        file_size: uploadForm.file_size,
-        category: uploadForm.category,
-        is_public: uploadForm.is_public,
-        uploaded_by: user.profile.id,
-        download_count: 0
-      })
-
-      if (error) throw error
-
-      toast.success('Document uploaded successfully')
-      setShowUploadModal(false)
-      setUploadForm({
-        name: '',
-        description: '',
-        file_url: '',
-        file_type: '',
-        file_size: 0,
-        category: 'general',
-        is_public: true
-      })
-      fetchDocuments()
-    } catch (error: any) {
-      console.error('Error uploading document:', error)
-      toast.error('Failed to upload document')
-    } finally {
-      setUploadingDocument(false)
-    }
-  }
-
-  // Edit document
-  const handleEditDocument = async () => {
-    if (!selectedDocument?.id || !editForm.name) {
-      toast.error('Please fill in all required fields')
-      return
-    }
-
-    try {
-      const { error } = await supabase
-        .from('documents')
-        .update({
-          name: editForm.name,
-          description: editForm.description,
-          category: editForm.category,
-          is_public: editForm.is_public
-        })
-        .eq('id', selectedDocument.id)
-
-      if (error) throw error
-
-      toast.success('Document updated successfully')
-      setShowEditModal(false)
-      setSelectedDocument(null)
-      fetchDocuments()
-    } catch (error: any) {
-      console.error('Error updating document:', error)
-      toast.error('Failed to update document')
-    }
-  }
-
-  // Delete document
-  const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return
-
-    try {
-      const { error } = await supabase.from('documents').delete().eq('id', documentId)
-
-      if (error) throw error
-
-      toast.success('Document deleted successfully')
-      fetchDocuments()
-    } catch (error: any) {
-      console.error('Error deleting document:', error)
-      toast.error('Failed to delete document')
-    }
-  }
-
-  // Download document
-  const handleDownloadDocument = async (doc: any) => {
-    try {
-      // Increment download count
-      await supabase
-        .from('documents')
-        .update({ download_count: doc.download_count + 1 })
-        .eq('id', doc.id)
-
-      // Open URL in new tab
-      window.open(doc.file_url, '_blank')
-      toast.success('Opening document...')
-      fetchDocuments()
-    } catch (error: any) {
-      console.error('Error downloading document:', error)
-      toast.error('Failed to download document')
-    }
-  }
-
-  // Handle file input change
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // For MVP, just use external URL approach
-    toast.info('Please use the URL input field to paste a link to your document')
-  }
-
-  // Filter documents
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.name.toLowerCase().includes(documentSearchTerm.toLowerCase()) ||
-                         doc.description?.toLowerCase().includes(documentSearchTerm.toLowerCase())
-    const matchesCategory = documentCategoryFilter === 'all' || doc.category === documentCategoryFilter
-    return matchesSearch && matchesCategory
-  })
 
   if (loading) {
     return (
@@ -1021,6 +792,11 @@ export function MemberDashboard() {
       {/* Admin - Email Templates View */}
       {activeView === 'admin-email-templates' && isAdmin && organization && user?.profile?.id && (
         <EmailTemplatesView organizationId={organization.id} profileId={user.profile.id} />
+      )}
+
+      {/* Admin - Document Library View */}
+      {activeView === 'admin-documents' && isAdmin && organization && (
+        <DocumentsAdminView organizationId={organization.id} />
       )}
 
       {/* Renewal Modal */}
@@ -10527,530 +10303,6 @@ function CustomReportsView({ organizationId, profileId }: CustomReportsViewProps
         </div>
       )}
 
-      {/* Admin Documents View */}
-      {activeView === 'admin-documents' && (
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Document Library</h2>
-              <p className="text-gray-600 mt-1">Manage organization documents</p>
-            </div>
-            <Button
-              onClick={() => setShowUploadModal(true)}
-              data-testid="button-upload-document"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Document
-            </Button>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search documents..."
-                value={documentSearchTerm}
-                onChange={(e) => setDocumentSearchTerm(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-documents"
-              />
-            </div>
-            <Select value={documentCategoryFilter} onValueChange={setDocumentCategoryFilter}>
-              <SelectTrigger className="w-48" data-testid="select-category-filter">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="policy">Policy</SelectItem>
-                <SelectItem value="form">Form</SelectItem>
-                <SelectItem value="guide">Guide</SelectItem>
-                <SelectItem value="legal">Legal</SelectItem>
-                <SelectItem value="financial">Financial</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Documents Grid */}
-          {documentsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => (
-                <Card key={i} className="animate-pulse" data-testid={`skeleton-document-${i}`}>
-                  <CardContent className="p-6">
-                    <div className="h-8 bg-gray-200 rounded mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : filteredDocuments.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600">No documents found</p>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowUploadModal(true)}
-                  className="mt-4"
-                  data-testid="button-upload-first-document"
-                >
-                  Upload your first document
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDocuments.map((doc) => {
-                const FileIcon = getFileTypeIcon(doc.file_type)
-                return (
-                  <Card key={doc.id} data-testid={`document-card-${doc.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-3 mb-4">
-                        <FileIcon className="h-10 w-10 text-blue-600 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate" data-testid={`document-name-${doc.id}`}>
-                            {doc.name}
-                          </h3>
-                          {doc.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mt-1" data-testid={`document-description-${doc.id}`}>
-                              {doc.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Category:</span>
-                          <Badge className={getCategoryColor(doc.category)} data-testid={`document-category-${doc.id}`}>
-                            {doc.category}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Size:</span>
-                          <span data-testid={`document-size-${doc.id}`}>{formatFileSize(doc.file_size || 0)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Visibility:</span>
-                          <span data-testid={`document-visibility-${doc.id}`}>
-                            {doc.is_public ? 'Public' : 'Private'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Downloads:</span>
-                          <span data-testid={`document-downloads-${doc.id}`}>{doc.download_count}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Uploaded by:</span>
-                          <span data-testid={`document-uploader-${doc.id}`}>
-                            {doc.uploader?.first_name} {doc.uploader?.last_name}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Date:</span>
-                          <span data-testid={`document-date-${doc.id}`}>{formatDate(doc.created_at)}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadDocument(doc)}
-                          className="flex-1"
-                          data-testid={`button-download-${doc.id}`}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedDocument(doc)
-                            setEditForm({
-                              name: doc.name,
-                              description: doc.description || '',
-                              category: doc.category,
-                              is_public: doc.is_public
-                            })
-                            setShowEditModal(true)
-                          }}
-                          data-testid={`button-edit-${doc.id}`}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteDocument(doc.id)}
-                          data-testid={`button-delete-${doc.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Member Documents View */}
-      {activeView === 'documents' && (
-        <div>
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
-            <p className="text-gray-600 mt-1">View and download organization documents</p>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search documents..."
-                value={documentSearchTerm}
-                onChange={(e) => setDocumentSearchTerm(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-documents"
-              />
-            </div>
-            <Select value={documentCategoryFilter} onValueChange={setDocumentCategoryFilter}>
-              <SelectTrigger className="w-48" data-testid="select-category-filter">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="policy">Policy</SelectItem>
-                <SelectItem value="form">Form</SelectItem>
-                <SelectItem value="guide">Guide</SelectItem>
-                <SelectItem value="legal">Legal</SelectItem>
-                <SelectItem value="financial">Financial</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Documents Grid */}
-          {documentsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => (
-                <Card key={i} className="animate-pulse" data-testid={`skeleton-document-${i}`}>
-                  <CardContent className="p-6">
-                    <div className="h-8 bg-gray-200 rounded mb-4"></div>
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : filteredDocuments.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600">No documents available</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDocuments.map((doc) => {
-                const FileIcon = getFileTypeIcon(doc.file_type)
-                return (
-                  <Card key={doc.id} data-testid={`document-card-${doc.id}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-3 mb-4">
-                        <FileIcon className="h-10 w-10 text-blue-600 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate" data-testid={`document-name-${doc.id}`}>
-                            {doc.name}
-                          </h3>
-                          {doc.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mt-1" data-testid={`document-description-${doc.id}`}>
-                              {doc.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Category:</span>
-                          <Badge className={getCategoryColor(doc.category)} data-testid={`document-category-${doc.id}`}>
-                            {doc.category}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Size:</span>
-                          <span data-testid={`document-size-${doc.id}`}>{formatFileSize(doc.file_size || 0)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Downloads:</span>
-                          <span data-testid={`document-downloads-${doc.id}`}>{doc.download_count}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Uploaded:</span>
-                          <span data-testid={`document-date-${doc.id}`}>{formatDate(doc.created_at)}</span>
-                        </div>
-                      </div>
-
-                      <Button
-                        size="sm"
-                        onClick={() => handleDownloadDocument(doc)}
-                        className="w-full"
-                        data-testid={`button-download-${doc.id}`}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Upload Document Modal */}
-      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-        <DialogContent onClose={() => setShowUploadModal(false)}>
-          <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
-            <DialogDescription>
-              Upload a new document to the library
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label htmlFor="document-name">Document Name *</Label>
-              <Input
-                id="document-name"
-                value={uploadForm.name}
-                onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
-                placeholder="Enter document name"
-                data-testid="input-document-name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="document-description">Description</Label>
-              <Textarea
-                id="document-description"
-                value={uploadForm.description}
-                onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
-                placeholder="Enter description (optional)"
-                rows={3}
-                data-testid="textarea-document-description"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="document-url">Document URL *</Label>
-              <Input
-                id="document-url"
-                value={uploadForm.file_url}
-                onChange={(e) => setUploadForm({ ...uploadForm, file_url: e.target.value })}
-                placeholder="Paste URL from Google Drive, Dropbox, etc."
-                data-testid="input-document-url"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Paste a public link to your document from Google Drive, Dropbox, or other file hosting service
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="document-type">File Type</Label>
-              <Input
-                id="document-type"
-                value={uploadForm.file_type}
-                onChange={(e) => setUploadForm({ ...uploadForm, file_type: e.target.value })}
-                placeholder="e.g., pdf, docx, xlsx"
-                data-testid="input-document-type"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="document-size">File Size (bytes)</Label>
-              <Input
-                id="document-size"
-                type="number"
-                value={uploadForm.file_size}
-                onChange={(e) => setUploadForm({ ...uploadForm, file_size: parseInt(e.target.value) || 0 })}
-                placeholder="Enter file size"
-                data-testid="input-document-size"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Maximum: 10 MB (10,485,760 bytes)
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="document-category">Category</Label>
-              <Select
-                value={uploadForm.category}
-                onValueChange={(value) => setUploadForm({ ...uploadForm, category: value as any })}
-              >
-                <SelectTrigger id="document-category" data-testid="select-document-category">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="policy">Policy</SelectItem>
-                  <SelectItem value="form">Form</SelectItem>
-                  <SelectItem value="guide">Guide</SelectItem>
-                  <SelectItem value="legal">Legal</SelectItem>
-                  <SelectItem value="financial">Financial</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is-public"
-                checked={uploadForm.is_public}
-                onCheckedChange={(checked) => setUploadForm({ ...uploadForm, is_public: checked as boolean })}
-                data-testid="checkbox-is-public"
-              />
-              <Label htmlFor="is-public" className="cursor-pointer">
-                Public (visible to all members)
-              </Label>
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowUploadModal(false)}
-                className="flex-1"
-                data-testid="button-cancel-upload"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUploadDocument}
-                disabled={uploadingDocument || !uploadForm.name || !uploadForm.file_url}
-                className="flex-1"
-                data-testid="button-confirm-upload"
-              >
-                {uploadingDocument ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Document Modal */}
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent onClose={() => setShowEditModal(false)}>
-          <DialogHeader>
-            <DialogTitle>Edit Document</DialogTitle>
-            <DialogDescription>
-              Update document information
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label htmlFor="edit-document-name">Document Name *</Label>
-              <Input
-                id="edit-document-name"
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                placeholder="Enter document name"
-                data-testid="input-edit-document-name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="edit-document-description">Description</Label>
-              <Textarea
-                id="edit-document-description"
-                value={editForm.description}
-                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                placeholder="Enter description (optional)"
-                rows={3}
-                data-testid="textarea-edit-document-description"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="edit-document-category">Category</Label>
-              <Select
-                value={editForm.category}
-                onValueChange={(value) => setEditForm({ ...editForm, category: value as any })}
-              >
-                <SelectTrigger id="edit-document-category" data-testid="select-edit-document-category">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="policy">Policy</SelectItem>
-                  <SelectItem value="form">Form</SelectItem>
-                  <SelectItem value="guide">Guide</SelectItem>
-                  <SelectItem value="legal">Legal</SelectItem>
-                  <SelectItem value="financial">Financial</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edit-is-public"
-                checked={editForm.is_public}
-                onCheckedChange={(checked) => setEditForm({ ...editForm, is_public: checked as boolean })}
-                data-testid="checkbox-edit-is-public"
-              />
-              <Label htmlFor="edit-is-public" className="cursor-pointer">
-                Public (visible to all members)
-              </Label>
-            </div>
-
-            <p className="text-sm text-gray-500">
-              Note: To change the file, please delete this document and upload a new one.
-            </p>
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowEditModal(false)}
-                className="flex-1"
-                data-testid="button-cancel-edit"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEditDocument}
-                disabled={!editForm.name}
-                className="flex-1"
-                data-testid="button-confirm-edit"
-              >
-                <Edit2 className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Results Modal */}
       {showResultsModal && selectedReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -11168,6 +10420,594 @@ function CustomReportsView({ organizationId, profileId }: CustomReportsViewProps
           </Card>
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// DOCUMENTS ADMIN VIEW COMPONENT  
+// ============================================================================
+
+interface DocumentsAdminViewProps {
+  organizationId: string;
+}
+
+function DocumentsAdminView({ organizationId }: DocumentsAdminViewProps) {
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  
+  const [uploadForm, setUploadForm] = useState({
+    name: '',
+    description: '',
+    file_url: '',
+    file_type: '',
+    file_size: 0,
+    category: 'general' as 'general' | 'policy' | 'form' | 'guide' | 'legal' | 'financial' | 'other',
+    is_public: true,
+  });
+
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    category: 'general' as 'general' | 'policy' | 'form' | 'guide' | 'legal' | 'financial' | 'other',
+    is_public: true,
+  });
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [organizationId]);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*, uploader:uploaded_by(first_name, last_name)')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (error: any) {
+      console.error('Error fetching documents:', error);
+      toast.error('Failed to load documents', { description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${organizationId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('organization-documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('organization-documents')
+        .getPublicUrl(filePath);
+
+      setUploadForm({
+        ...uploadForm,
+        file_url: publicUrl,
+        file_type: file.type,
+        file_size: file.size,
+        name: uploadForm.name || file.name,
+      });
+
+      toast.success('File uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file', { description: error.message });
+    }
+  };
+
+  const handleUploadDocument = async () => {
+    try {
+      if (!uploadForm.name || !uploadForm.file_url) {
+        toast.error('Please provide a name and upload a file');
+        return;
+      }
+
+      setUploading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      const { error } = await supabase.from('documents').insert({
+        organization_id: organizationId,
+        uploaded_by: profile?.id,
+        name: uploadForm.name,
+        description: uploadForm.description || null,
+        file_url: uploadForm.file_url,
+        file_type: uploadForm.file_type,
+        file_size: uploadForm.file_size,
+        category: uploadForm.category,
+        is_public: uploadForm.is_public,
+      });
+
+      if (error) throw error;
+
+      toast.success('Document uploaded successfully');
+      setShowUploadModal(false);
+      setUploadForm({
+        name: '',
+        description: '',
+        file_url: '',
+        file_type: '',
+        file_size: 0,
+        category: 'general',
+        is_public: true,
+      });
+      fetchDocuments();
+    } catch (error: any) {
+      console.error('Error uploading document:', error);
+      toast.error('Failed to upload document', { description: error.message });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleEditDocument = async () => {
+    try {
+      if (!selectedDocument?.id || !editForm.name) {
+        toast.error('Please provide a document name');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('documents')
+        .update({
+          name: editForm.name,
+          description: editForm.description || null,
+          category: editForm.category,
+          is_public: editForm.is_public,
+        })
+        .eq('id', selectedDocument.id);
+
+      if (error) throw error;
+
+      toast.success('Document updated successfully');
+      setShowEditModal(false);
+      setSelectedDocument(null);
+      fetchDocuments();
+    } catch (error: any) {
+      console.error('Error updating document:', error);
+      toast.error('Failed to update document', { description: error.message });
+    }
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      if (!confirm('Are you sure you want to delete this document?')) return;
+
+      const { error } = await supabase.from('documents').delete().eq('id', documentId);
+
+      if (error) throw error;
+
+      toast.success('Document deleted successfully');
+      fetchDocuments();
+    } catch (error: any) {
+      console.error('Error deleting document:', error);
+      toast.error('Failed to delete document', { description: error.message });
+    }
+  };
+
+  const handleDownloadDocument = async (doc: any) => {
+    try {
+      await supabase
+        .from('documents')
+        .update({ download_count: (doc.download_count || 0) + 1 })
+        .eq('id', doc.id);
+
+      window.open(doc.file_url, '_blank');
+      fetchDocuments();
+    } catch (error: any) {
+      console.error('Error downloading document:', error);
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getFileTypeIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) return FileText;
+    if (fileType.includes('image')) return Image;
+    if (fileType.includes('video')) return Video;
+    return FileIcon;
+  };
+
+  const getCategoryColor = (category: string): string => {
+    const colors: Record<string, string> = {
+      general: 'bg-gray-100 text-gray-800',
+      policy: 'bg-blue-100 text-blue-800',
+      form: 'bg-green-100 text-green-800',
+      guide: 'bg-purple-100 text-purple-800',
+      legal: 'bg-red-100 text-red-800',
+      financial: 'bg-yellow-100 text-yellow-800',
+      other: 'bg-gray-100 text-gray-800',
+    };
+    return colors[category] || colors.other;
+  };
+
+  const filteredDocuments = documents.filter(doc => {
+    const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Document Library</h2>
+          <p className="text-gray-600 mt-1">Manage organization documents</p>
+        </div>
+        <Button
+          onClick={() => setShowUploadModal(true)}
+          data-testid="button-upload-document"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Upload Document
+        </Button>
+      </div>
+
+      <div className="flex gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search documents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+            data-testid="input-search-documents"
+          />
+        </div>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-48" data-testid="select-category-filter">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="general">General</SelectItem>
+            <SelectItem value="policy">Policy</SelectItem>
+            <SelectItem value="form">Form</SelectItem>
+            <SelectItem value="guide">Guide</SelectItem>
+            <SelectItem value="legal">Legal</SelectItem>
+            <SelectItem value="financial">Financial</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="animate-pulse" data-testid={`skeleton-document-${i}`}>
+              <CardContent className="p-6">
+                <div className="h-8 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filteredDocuments.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600">No documents found</p>
+            <Button
+              variant="outline"
+              onClick={() => setShowUploadModal(true)}
+              className="mt-4"
+              data-testid="button-upload-first-document"
+            >
+              Upload your first document
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredDocuments.map((doc) => {
+            const FileIconComponent = getFileTypeIcon(doc.file_type);
+            return (
+              <Card key={doc.id} data-testid={`document-card-${doc.id}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <FileIconComponent className="h-10 w-10 text-blue-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate" data-testid={`document-name-${doc.id}`}>
+                        {doc.name}
+                      </h3>
+                      {doc.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2 mt-1" data-testid={`document-description-${doc.id}`}>
+                          {doc.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Category:</span>
+                      <Badge className={getCategoryColor(doc.category)} data-testid={`document-category-${doc.id}`}>
+                        {doc.category}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Size:</span>
+                      <span data-testid={`document-size-${doc.id}`}>{formatFileSize(doc.file_size || 0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Visibility:</span>
+                      <span data-testid={`document-visibility-${doc.id}`}>
+                        {doc.is_public ? 'Public' : 'Private'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Downloads:</span>
+                      <span data-testid={`document-downloads-${doc.id}`}>{doc.download_count || 0}</span>
+                    </div>
+                    {doc.uploader && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Uploaded by:</span>
+                        <span data-testid={`document-uploader-${doc.id}`}>
+                          {doc.uploader.first_name} {doc.uploader.last_name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleDownloadDocument(doc)}
+                      data-testid={`button-download-${doc.id}`}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDocument(doc);
+                        setEditForm({
+                          name: doc.name,
+                          description: doc.description || '',
+                          category: doc.category,
+                          is_public: doc.is_public,
+                        });
+                        setShowEditModal(true);
+                      }}
+                      data-testid={`button-edit-${doc.id}`}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteDocument(doc.id)}
+                      data-testid={`button-delete-${doc.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="upload-file">File</Label>
+              <Input
+                id="upload-file"
+                type="file"
+                onChange={handleFileChange}
+                data-testid="input-upload-file"
+              />
+              <p className="text-sm text-gray-500 mt-1">Max file size: 10MB</p>
+            </div>
+
+            <div>
+              <Label htmlFor="upload-name">Document Name</Label>
+              <Input
+                id="upload-name"
+                value={uploadForm.name}
+                onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
+                placeholder="Enter document name"
+                data-testid="input-upload-name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="upload-description">Description (Optional)</Label>
+              <textarea
+                id="upload-description"
+                className="w-full border rounded-md p-2"
+                rows={3}
+                value={uploadForm.description}
+                onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                placeholder="Enter document description"
+                data-testid="input-upload-description"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="upload-category">Category</Label>
+              <Select value={uploadForm.category} onValueChange={(value: any) => setUploadForm({ ...uploadForm, category: value })}>
+                <SelectTrigger data-testid="select-upload-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="policy">Policy</SelectItem>
+                  <SelectItem value="form">Form</SelectItem>
+                  <SelectItem value="guide">Guide</SelectItem>
+                  <SelectItem value="legal">Legal</SelectItem>
+                  <SelectItem value="financial">Financial</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="upload-public"
+                checked={uploadForm.is_public}
+                onChange={(e) => setUploadForm({ ...uploadForm, is_public: e.target.checked })}
+                data-testid="checkbox-upload-public"
+              />
+              <label htmlFor="upload-public" className="text-sm">
+                Make this document publicly accessible
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadModal(false)}
+                data-testid="button-cancel-upload"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUploadDocument}
+                disabled={uploading || !uploadForm.name || !uploadForm.file_url}
+                data-testid="button-save-upload"
+              >
+                {uploading ? 'Uploading...' : 'Upload Document'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Document Name</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                placeholder="Enter document name"
+                data-testid="input-edit-name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-description">Description (Optional)</Label>
+              <textarea
+                id="edit-description"
+                className="w-full border rounded-md p-2"
+                rows={3}
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                placeholder="Enter document description"
+                data-testid="input-edit-description"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-category">Category</Label>
+              <Select value={editForm.category} onValueChange={(value: any) => setEditForm({ ...editForm, category: value })}>
+                <SelectTrigger data-testid="select-edit-category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="policy">Policy</SelectItem>
+                  <SelectItem value="form">Form</SelectItem>
+                  <SelectItem value="guide">Guide</SelectItem>
+                  <SelectItem value="legal">Legal</SelectItem>
+                  <SelectItem value="financial">Financial</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="edit-public"
+                checked={editForm.is_public}
+                onChange={(e) => setEditForm({ ...editForm, is_public: e.target.checked })}
+                data-testid="checkbox-edit-public"
+              />
+              <label htmlFor="edit-public" className="text-sm">
+                Make this document publicly accessible
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedDocument(null);
+                }}
+                data-testid="button-cancel-edit"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleEditDocument}
+                data-testid="button-save-edit"
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
