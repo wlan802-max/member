@@ -33,11 +33,29 @@ The backend includes Express.js API endpoints for custom domain management:
 - **Domain Verification**: `/api/domains/verify` - Checks DNS TXT records using native DNS resolution
 - **SSL Generation**: `/api/domains/ssl/generate` - Triggers Certbot for SSL certificate issuance (production only)
 
+### Security Architecture
+
+**Member Approval Workflow** (Critical Security Feature):
+- **Zero-Trust Client Input**: Database trigger NEVER trusts client-provided role metadata - all signups create `role='member'` regardless of client input
+- **Mandatory Admin Approval**: All new members are created with `is_active=false` and `status='pending'`, requiring explicit admin approval before system access
+- **Organization Validation**: Invalid/missing organization slugs create locked accounts for manual review, preventing unauthorized access
+- **Audit Trail**: Approval/rejection actions tracked with `status_updated_at` and `status_updated_by` for complete security auditing
+- **Privilege Separation**: Super admin and organization admin creation happen via separate server-controlled processes, never through public signup
+- **Implementation**: `fix_new_user_approval_flow.sql` trigger + admin approval UI in `MemberDashboard.tsx`
+
+**Security Fixes Applied** (2024-10-05):
+- Fixed critical privilege escalation vulnerability where clients could send `role='super_admin'` in signup metadata
+- Eliminated auto-activation of new members without admin review
+- Added complete audit trail for all approval/rejection actions
+- See `SECURITY_FIX_MEMBER_APPROVAL.md` for detailed security documentation
+
 ### Design Patterns & Key Decisions
 
 -   **Priority-Based Tenant Detection**: Custom domains checked first, then subdomains, then URL parameters - provides flexibility while supporting branded experiences
 -   **URL Parameter over Subdomain-Only Routing**: Offers flexibility across all environments (localhost, IP, production) for easier development
 -   **Super Admin as Null Organization**: Prevents RLS circular dependencies and simplifies cross-organization access for super admins
+-   **Zero-Trust Security Model**: Never trust client-provided role/privileges - all authorization controlled server-side
+-   **Mandatory Approval Workflow**: All member signups require explicit admin approval to prevent unauthorized access
 -   **Vite over Next.js**: Chosen for faster development builds, HMR, and simpler deployment of static files
 -   **Custom Hooks over Context API**: Used for simpler component logic, debugging, and direct Supabase integration
 -   **DNS-Based Domain Verification**: Uses TXT records (ACME standard) for cryptographic proof of domain ownership
