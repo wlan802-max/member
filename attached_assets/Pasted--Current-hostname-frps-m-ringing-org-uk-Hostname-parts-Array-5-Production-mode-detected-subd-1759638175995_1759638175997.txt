@@ -1,0 +1,162 @@
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+ Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+ Found organization: Object
+ Current organization result: Object
+ Organization found: Fairbourne Railway Preservation Society
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Profile loaded: Object
+ Organization loaded: frps
+ useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+index-uaaNn7Ks.js:64 Getting current organization...
+index-uaaNn7Ks.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Production mode, is admin: false
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Getting organization for subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Found organization: Object
+index-uaaNn7Ks.js:64 Current organization result: Object
+index-uaaNn7Ks.js:64 Organization found: Fairbourne Railway Preservation Society
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Found organization: Object
+index-uaaNn7Ks.js:64 Current organization result: Object
+index-uaaNn7Ks.js:64 Organization found: Fairbourne Railway Preservation Society
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+retailer.js:2 No messages from Iterable
+retailer.js:2 Error fetching messages from Iterable No messages from Iterable
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 useAuth: Starting auth check
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/notifications?select=*&profile_id=eq.4f7dfb3b-c32f-4a60-ac23-038a526acea1&order=created_at.desc&limit=50:1  Failed to load resource: the server responded with a status of 404 ()
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/notifications?select=*&profile_id=eq.4f7dfb3b-c32f-4a60-ac23-038a526acea1&order=created_at.desc&limit=50:1  Failed to load resource: the server responded with a status of 404 ()
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:40 ReferenceError: activeView is not defined
+    at uZ (index-uaaNn7Ks.js:418:14866)
+    at Mx (index-uaaNn7Ks.js:38:16998)
+    at YE (index-uaaNn7Ks.js:40:44030)
+    at KE (index-uaaNn7Ks.js:40:39766)
+    at AR (index-uaaNn7Ks.js:40:39694)
+    at Vf (index-uaaNn7Ks.js:40:39547)
+    at yv (index-uaaNn7Ks.js:40:35914)
+    at Dj (index-uaaNn7Ks.js:40:36717)
+    at ts (index-uaaNn7Ks.js:38:3274)
+    at index-uaaNn7Ks.js:40:34246
+sv @ index-uaaNn7Ks.js:40
+index-uaaNn7Ks.js:38 Uncaught ReferenceError: activeView is not defined
+    at uZ (index-uaaNn7Ks.js:418:14866)
+    at Mx (index-uaaNn7Ks.js:38:16998)
+    at YE (index-uaaNn7Ks.js:40:44030)
+    at KE (index-uaaNn7Ks.js:40:39766)
+    at AR (index-uaaNn7Ks.js:40:39694)
+    at Vf (index-uaaNn7Ks.js:40:39547)
+    at yv (index-uaaNn7Ks.js:40:35914)
+    at Dj (index-uaaNn7Ks.js:40:36717)
+    at ts (index-uaaNn7Ks.js:38:3274)
+    at index-uaaNn7Ks.js:40:34246
