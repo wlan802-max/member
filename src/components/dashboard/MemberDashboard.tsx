@@ -1131,18 +1131,21 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   const fetchPendingUsers = async () => {
     try {
-      // Fetch users with pending memberships
+      // Fetch users with pending status on their profile
+      // This now checks the profile.status field directly instead of requiring memberships
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           *,
-          memberships!inner (
+          memberships (
             id,
-            status
+            status,
+            membership_type,
+            membership_year
           )
         `)
         .eq('organization_id', organizationId)
-        .eq('memberships.status', 'pending')
+        .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
