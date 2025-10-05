@@ -185,7 +185,8 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
               id: 'membership_selection',
               type: 'membership_selection',
               label: 'Select Membership Type(s)',
-              required: true
+              required: true,
+              allow_multiple: true
             }
           ]
         }
@@ -735,6 +736,20 @@ function FieldEditor({
                   />
                   <Label htmlFor={`field-required-${sectionIdx}-${fieldIdx}`}>Required</Label>
                 </div>
+
+                {field.type === 'membership_selection' && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={`field-allow-multiple-${sectionIdx}-${fieldIdx}`}
+                      checked={field.allow_multiple || false}
+                      onCheckedChange={(checked) => onUpdate({ allow_multiple: !!checked })}
+                      data-testid={`checkbox-field-allow-multiple-${sectionIdx}-${fieldIdx}`}
+                    />
+                    <Label htmlFor={`field-allow-multiple-${sectionIdx}-${fieldIdx}`}>
+                      Allow Multiple Selections
+                    </Label>
+                  </div>
+                )}
               </div>
             )}
           </div>
