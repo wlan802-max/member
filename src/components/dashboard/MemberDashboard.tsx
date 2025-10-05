@@ -1171,6 +1171,8 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   const handleApproveUser = async (userId: string, role: 'member' | 'admin' = 'member') => {
     try {
+      console.log('Approving user with profile ID:', userId);
+      
       // Update profile to be active with proper status
       const { error: profileError } = await supabase
         .from('profiles')
@@ -1183,16 +1185,42 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
         })
         .eq('id', userId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
+      console.log('Profile updated successfully');
+
+      // Check memberships before update
+      const { data: beforeUpdate, error: checkError } = await supabase
+        .from('memberships')
+        .select('*')
+        .eq('profile_id', userId);
+      
+      console.log('Memberships before update:', beforeUpdate);
+      if (checkError) console.error('Error checking memberships:', checkError);
 
       // Update any pending memberships to active
-      const { error: membershipError } = await supabase
+      const { data: updatedMemberships, error: membershipError } = await supabase
         .from('memberships')
         .update({ status: 'active' })
         .eq('profile_id', userId)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .select();
 
-      if (membershipError) throw membershipError;
+      if (membershipError) {
+        console.error('Membership update error:', membershipError);
+        throw membershipError;
+      }
+      console.log('Memberships updated:', updatedMemberships);
+
+      // Check memberships after update
+      const { data: afterUpdate } = await supabase
+        .from('memberships')
+        .select('*')
+        .eq('profile_id', userId);
+      
+      console.log('Memberships after update:', afterUpdate);
 
       toast.success('User approved successfully');
       await fetchMembers();
