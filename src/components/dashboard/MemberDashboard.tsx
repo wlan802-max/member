@@ -1094,6 +1094,7 @@ interface MembersAdminViewProps {
 }
 
 function MembersAdminView({ organizationId }: MembersAdminViewProps) {
+  const { user } = useAuth();
   const [memberTab, setMemberTab] = useState<'active' | 'pending'>('active');
   const [members, setMembers] = useState<any[]>([]);
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
@@ -1167,12 +1168,15 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   const handleApproveUser = async (userId: string, role: 'member' | 'admin' = 'member') => {
     try {
-      // Update profile to be active
+      // Update profile to be active with proper status
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           is_active: true,
-          role: role
+          status: 'active',
+          role: role,
+          status_updated_at: new Date().toISOString(),
+          status_updated_by: user?.profile?.id || null
         })
         .eq('id', userId);
 
@@ -1198,11 +1202,14 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
 
   const handleRejectUser = async (userId: string, reason: string = '') => {
     try {
-      // Deactivate the profile
+      // Deactivate the profile and set status to rejected
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          is_active: false
+          is_active: false,
+          status: 'rejected',
+          status_updated_at: new Date().toISOString(),
+          status_updated_by: user?.profile?.id || null
         })
         .eq('id', userId);
 
