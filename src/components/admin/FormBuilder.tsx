@@ -201,6 +201,23 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
       return;
     }
 
+    // Validate schema structure
+    for (const section of schema.sections) {
+      for (const field of section.fields) {
+        // Validate dropdown fields have options
+        if (field.type === 'select' && (!field.options || field.options.length === 0)) {
+          toast.error(`Dropdown field "${field.label}" must have at least one option`);
+          return;
+        }
+        
+        // Ensure all fields have required properties
+        if (!field.id || !field.label) {
+          toast.error(`All fields must have an ID and label`);
+          return;
+        }
+      }
+    }
+
     try {
       setSaving(true);
 
@@ -217,7 +234,10 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
           .update({ is_active: false })
           .eq('id', existing.id);
 
-        if (deactivateError) throw deactivateError;
+        if (deactivateError) {
+          console.error('Deactivate error:', deactivateError.message);
+          throw deactivateError;
+        }
       }
 
       const newVersion = (existing?.schema_version || 0) + 1;
@@ -235,13 +255,16 @@ export function FormBuilder({ organizationId }: FormBuilderProps) {
           is_active: true
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error:', insertError.message);
+        throw insertError;
+      }
 
       setSchema(newSchema);
       toast.success(`Form saved successfully (version ${newVersion})`);
     } catch (error) {
       console.error('Error saving form schema:', error);
-      toast.error('Failed to save form schema');
+      toast.error(`Failed to save form: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }

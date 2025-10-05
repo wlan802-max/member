@@ -149,15 +149,17 @@ export function SignupFormEnhanced({
       });
 
       if (authError) {
+        console.error('Signup error:', authError.message);
         toast.error(authError.message || 'Failed to create account. Please try again.');
         return;
       }
 
       toast.info('Creating your profile...');
-      const profileId = await waitForProfile(email);
+      const profileId = await waitForProfile(email, 20);
 
       if (!profileId) {
-        toast.error('Account created but profile not found. Please contact support.');
+        console.error('Profile creation timeout');
+        toast.error('Profile creation is taking longer than expected. Please try again or contact support.');
         return;
       }
 
@@ -174,7 +176,8 @@ export function SignupFormEnhanced({
         });
 
       if (responseError) {
-        toast.error('Account created but form data could not be saved.');
+        console.error('Form response error:', responseError.message, responseError);
+        toast.error('Failed to save your application. Please try again or contact support.');
         return;
       }
 
