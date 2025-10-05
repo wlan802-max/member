@@ -310,16 +310,26 @@ install_ssl() {
         log ""
         warn "IMPORTANT: Wildcard certificates require DNS validation."
         log "You will need to:"
-        log "1. Add a TXT record to your DNS"
-        log "2. Wait for DNS propagation (usually 1-5 minutes)"
-        log "3. Press Enter to continue verification"
+        log "1. Add a TXT record to your DNS (_acme-challenge.$DOMAIN)"
+        log "2. Wait for DNS propagation (usually 5-15 minutes)"
+        log "3. Verify with: dig @8.8.8.8 _acme-challenge.$DOMAIN TXT"
+        log "4. Press Enter in Certbot to continue verification"
+        log ""
+        log "Note: Certbot will pause and show you the exact TXT record value to add"
+        log ""
+        warn "TROUBLESHOOTING: If you encounter errors, see WILDCARD_SSL_SETUP.md"
         log ""
         read -p "Press Enter to start wildcard SSL setup (or Ctrl+C to cancel)..."
         
         # Request wildcard certificate with manual DNS validation
         log "Requesting wildcard SSL certificate for $DOMAIN and *.$DOMAIN..."
         log ""
-        log "Follow the instructions below to add DNS TXT record:"
+        log "Follow the instructions below carefully:"
+        log "1. Certbot will show you a TXT record value"
+        log "2. Add this EXACT value to your DNS"
+        log "3. Wait 5-15 minutes for DNS propagation"
+        log "4. Verify DNS with: dig @8.8.8.8 _acme-challenge.$DOMAIN TXT"
+        log "5. Only press Enter in Certbot once DNS shows the correct value"
         log ""
         
         if sudo certbot certonly --manual --preferred-challenges dns \
@@ -369,8 +379,23 @@ EOF
             fi
         else
             warn "Wildcard SSL certificate setup failed."
-            log "You can set it up manually later with:"
+            log ""
+            log "Common reasons for failure:"
+            log "  - DNS TXT record not added or incorrect value"
+            log "  - DNS not fully propagated (wait longer)"
+            log "  - Old _acme-challenge records still present (delete them)"
+            log "  - Network/firewall blocking Certbot validation"
+            log ""
+            log "NEXT STEPS:"
+            log "1. Review the error messages above"
+            log "2. Check troubleshooting guide: cat WILDCARD_SSL_SETUP.md"
+            log "3. Use diagnostic tool: sudo ./ssl-helper.sh check $DOMAIN"
+            log "4. Verify DNS: sudo ./ssl-helper.sh verify-dns $DOMAIN"
+            log ""
+            log "To retry manually:"
             log "  sudo certbot certonly --manual --preferred-challenges dns -d $DOMAIN -d '*.$DOMAIN'"
+            log "Or use the helper script:"
+            log "  sudo ./ssl-helper.sh setup $DOMAIN"
         fi
     else
         log "Setting up SSL certificate for main domain only..."
@@ -422,6 +447,21 @@ setup_custom_domains() {
     if [ -f "CUSTOM_DOMAINS_SETUP.md" ]; then
         sudo cp CUSTOM_DOMAINS_SETUP.md /opt/custom-domains/
         log "Copied custom domain setup documentation to /opt/custom-domains/CUSTOM_DOMAINS_SETUP.md"
+    fi
+    
+    # Copy SSL troubleshooting guide if it exists
+    if [ -f "WILDCARD_SSL_SETUP.md" ]; then
+        sudo cp WILDCARD_SSL_SETUP.md /opt/custom-domains/
+        log "Copied SSL troubleshooting guide to /opt/custom-domains/WILDCARD_SSL_SETUP.md"
+    fi
+    
+    # Copy SSL helper script if it exists
+    if [ -f "ssl-helper.sh" ]; then
+        sudo cp ssl-helper.sh /opt/custom-domains/
+        sudo chmod +x /opt/custom-domains/ssl-helper.sh
+        sudo ln -sf /opt/custom-domains/ssl-helper.sh /usr/local/bin/ssl-helper
+        log "Installed SSL helper script"
+        log "You can now use: sudo ssl-helper check|setup|renew|verify-dns|test-cert <domain>"
     fi
     
     # Create certbot webroot for ACME challenges
