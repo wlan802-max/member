@@ -207,7 +207,7 @@ export function SignupFormEnhanced({
       const membershipRecords = selectedMemberships.map(typeId => ({
         profile_id: profileId,
         organization_id: organizationId,
-        membership_type_id: typeId,
+        membership_type: typeId,
         membership_year: membershipYear,
         status: 'pending',
         amount_paid: 0.00
