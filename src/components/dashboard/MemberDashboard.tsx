@@ -1110,6 +1110,7 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
   const [selectedMembershipTypes, setSelectedMembershipTypes] = useState<string[]>([]);
   const [selectedMembershipYears, setSelectedMembershipYears] = useState<number[]>([new Date().getFullYear()]);
   const [membershipTypes, setMembershipTypes] = useState<any[]>([]);
+  const [loadingFormResponse, setLoadingFormResponse] = useState(false);
 
   useEffect(() => {
     fetchMembers();
@@ -1484,9 +1485,34 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
                   <Button 
                     size="sm" 
                     variant="default"
-                    onClick={() => {
+                    onClick={async () => {
                       setPendingApproval({ user, role: 'member' });
                       setShowApprovalModal(true);
+                      
+                      // Reset state before loading to avoid stale selections
+                      setSelectedMembershipTypes([]);
+                      setLoadingFormResponse(true);
+                      
+                      try {
+                        const { data: formResponse, error } = await supabase
+                          .from('profile_form_responses')
+                          .select('selected_membership_types')
+                          .eq('profile_id', user.id)
+                          .order('created_at', { ascending: false })
+                          .limit(1)
+                          .maybeSingle();
+                        
+                        if (error) {
+                          console.error('Error loading form response:', error);
+                          toast.error('Could not load signup preferences');
+                        } else if (formResponse && formResponse.selected_membership_types) {
+                          setSelectedMembershipTypes(formResponse.selected_membership_types);
+                        }
+                      } catch (err) {
+                        console.error('Unexpected error loading form response:', err);
+                      } finally {
+                        setLoadingFormResponse(false);
+                      }
                     }}
                     data-testid={`button-approve-user-${user.id}`}
                     className="bg-green-600 hover:bg-green-700"
@@ -1497,9 +1523,34 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => {
+                    onClick={async () => {
                       setPendingApproval({ user, role: 'admin' });
                       setShowApprovalModal(true);
+                      
+                      // Reset state before loading to avoid stale selections
+                      setSelectedMembershipTypes([]);
+                      setLoadingFormResponse(true);
+                      
+                      try {
+                        const { data: formResponse, error } = await supabase
+                          .from('profile_form_responses')
+                          .select('selected_membership_types')
+                          .eq('profile_id', user.id)
+                          .order('created_at', { ascending: false })
+                          .limit(1)
+                          .maybeSingle();
+                        
+                        if (error) {
+                          console.error('Error loading form response:', error);
+                          toast.error('Could not load signup preferences');
+                        } else if (formResponse && formResponse.selected_membership_types) {
+                          setSelectedMembershipTypes(formResponse.selected_membership_types);
+                        }
+                      } catch (err) {
+                        console.error('Unexpected error loading form response:', err);
+                      } finally {
+                        setLoadingFormResponse(false);
+                      }
                     }}
                     data-testid={`button-approve-admin-${user.id}`}
                   >
@@ -1579,6 +1630,13 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
             </DialogHeader>
             
             <div className="space-y-4">
+              {loadingFormResponse && (
+                <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-800 flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading signup preferences...
+                </div>
+              )}
+              
               <div>
                 <Label>Membership Year(s) - Select one or more</Label>
                 <div className="space-y-2 mt-2 border rounded-lg p-4">
@@ -1608,7 +1666,19 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
               </div>
 
               <div>
-                <Label>Membership Types (Select one or more)</Label>
+                <Label>
+                  Membership Types (Select one or more)
+                  {!loadingFormResponse && selectedMembershipTypes.length > 0 && (
+                    <span className="ml-2 text-xs text-green-600 font-normal">
+                      ✓ Pre-filled from signup form (you can change)
+                    </span>
+                  )}
+                  {!loadingFormResponse && selectedMembershipTypes.length === 0 && (
+                    <span className="ml-2 text-xs text-amber-600 font-normal">
+                      No saved preferences - please select manually
+                    </span>
+                  )}
+                </Label>
                 <div className="space-y-2 mt-2 border rounded-lg p-4">
                   {membershipTypes.map((type) => (
                     <div key={type.id} className="flex items-center space-x-2">

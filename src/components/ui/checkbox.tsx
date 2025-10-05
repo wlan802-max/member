@@ -8,13 +8,14 @@ export interface CheckboxProps
 }
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, onCheckedChange, ...props }, ref) => {
+  ({ className, onCheckedChange, id, ...props }, ref) => {
     return (
       <div className="relative inline-flex items-center">
         <input
           type="checkbox"
           className="peer sr-only"
           ref={ref}
+          id={id}
           onChange={(e) => {
             if (onCheckedChange) {
               onCheckedChange(e.target.checked)
