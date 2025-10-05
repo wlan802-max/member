@@ -163,8 +163,10 @@ export function SignupFormEnhanced({
 
       console.log('Signup successful, auth data:', authData);
 
+      console.log('Step 1: Waiting for profile creation...');
       toast.info('Creating your profile...');
       const profileId = await waitForProfile(email);
+      console.log('Profile ID received:', profileId);
 
       if (!profileId) {
         console.error('Profile not found after retries');
@@ -172,6 +174,7 @@ export function SignupFormEnhanced({
         return;
       }
 
+      console.log('Step 2: Saving form response...');
       const { error: responseError } = await supabase
         .from('profile_form_responses')
         .insert({
@@ -189,8 +192,10 @@ export function SignupFormEnhanced({
         toast.error('Account created but form data could not be saved.');
         return;
       }
+      console.log('Form response saved successfully');
 
       // Create membership records for each selected membership type
+      console.log('Step 3: Getting membership year...');
       const { data: yearData, error: yearError } = await supabase
         .rpc('get_current_membership_year', { org_id: organizationId });
 
@@ -199,11 +204,14 @@ export function SignupFormEnhanced({
         toast.error('Account created but membership year could not be determined.');
         return;
       }
+      console.log('Membership year data:', yearData);
 
       // RPC returns integer directly
       const membershipYear = typeof yearData === 'number' ? yearData : new Date().getFullYear();
+      console.log('Using membership year:', membershipYear);
 
       // Create membership records for each selected type
+      console.log('Step 4: Preparing membership records...');
       const membershipRecords = selectedMemberships.map(typeId => ({
         profile_id: profileId,
         organization_id: organizationId,
