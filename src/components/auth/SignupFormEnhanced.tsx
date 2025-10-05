@@ -213,15 +213,18 @@ export function SignupFormEnhanced({
         amount_paid: 0.00
       }));
 
+      console.log('Creating membership records:', membershipRecords);
       const { error: membershipError } = await supabase
         .from('memberships')
         .insert(membershipRecords);
 
       if (membershipError) {
         console.error('Error creating membership records:', membershipError);
-        toast.error('Account created but membership records could not be created. Please contact an administrator.');
+        console.error('Membership error details:', JSON.stringify(membershipError, null, 2));
+        toast.error(`Account created but membership records could not be created: ${membershipError.message || 'Unknown error'}`);
         return;
       }
+      console.log('Membership records created successfully');
 
       // Trigger email workflows for signup
       try {
