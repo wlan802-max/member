@@ -1,0 +1,135 @@
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Getting organization for subdomain: frps
+ Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+ Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+ Profile loaded: Object
+ Found organization: Object
+ Current organization result: Object
+ Organization found: Fairbourne Railway Preservation Society
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Organization loaded: frps
+ useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+ Production mode, detected subdomain: frps
+ useAuth: Starting auth check
+ Loading organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Getting current organization...
+ Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+ Production mode, is admin: false
+ Current hostname: frps.m.ringing.org.uk
+ Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Getting organization for subdomain: frps
+index-uaaNn7Ks.js:64 useAuth: Starting auth check
+index-uaaNn7Ks.js:64 Loading organization...
+index-uaaNn7Ks.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Production mode, is admin: false
+index-uaaNn7Ks.js:64 Getting current organization...
+index-uaaNn7Ks.js:64 Checking if super admin subdomain for hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Production mode, is admin: false
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Getting organization for subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Found organization: Object
+index-uaaNn7Ks.js:64 Current organization result: Object
+index-uaaNn7Ks.js:64 Organization found: Fairbourne Railway Preservation Society
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Found organization: Object
+index-uaaNn7Ks.js:64 Current organization result: Object
+index-uaaNn7Ks.js:64 Organization found: Fairbourne Railway Preservation Society
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 useAuth: Starting auth check
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Getting profile for user: f728e5ee-fe1e-41de-b886-11efc38fce6a
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Profile loaded: Object
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: getCurrentUser resolved with user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Organization loaded: frps
+index-uaaNn7Ks.js:64 useAuth: Auth state changed, user: wjl@w-j-lander.uk
+index-uaaNn7Ks.js:64 Current hostname: frps.m.ringing.org.uk
+index-uaaNn7Ks.js:64 Hostname parts: Array(5)
+index-uaaNn7Ks.js:64 Production mode, detected subdomain: frps
+zwnfmfzvkpdbxmiggbve.supabase.co/rest/v1/subscriber_lists?select=mailing_list_id%2Cstatus&subscriber_id=eq.130336c7-2bee-4d22-8346-d875655ed540:1  Failed to load resource: the server responded with a status of 404 ()
+index-uaaNn7Ks.js:361 Error fetching lists: Object
+u @ index-uaaNn7Ks.js:361
