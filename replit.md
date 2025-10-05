@@ -43,9 +43,17 @@ The backend includes Express.js API endpoints for custom domain management:
 - **Privilege Separation**: Super admin and organization admin creation happen via separate server-controlled processes, never through public signup
 - **Implementation**: `fix_new_user_approval_flow.sql` trigger + admin approval UI in `MemberDashboard.tsx`
 
-**Security Fixes Applied** (2024-10-05):
+**Membership Creation Workflow** (Admin-Controlled):
+- **Signup**: Users sign up with profile creation only - NO membership records created during signup
+- **Admin Creates Memberships**: During approval, admins select which membership year(s) and type(s) to assign
+- **Flexible Assignment**: Admins can assign multiple membership types (e.g., Adult + Associate) and multiple years (e.g., current + next year for late joiners)
+- **RLS Security**: Membership INSERT policies simplified since only admins create memberships after approval, not during public signup
+- **Implementation**: Admin approval modal in `MemberDashboard.tsx` with membership type and year selection
+
+**Security Fixes Applied** (2025-10-05):
 - Fixed critical privilege escalation vulnerability where clients could send `role='super_admin'` in signup metadata
 - Eliminated auto-activation of new members without admin review
+- Removed membership creation from signup flow to avoid RLS conflicts and give admins full control
 - Added complete audit trail for all approval/rejection actions
 - See `SECURITY_FIX_MEMBER_APPROVAL.md` for detailed security documentation
 
@@ -56,6 +64,7 @@ The backend includes Express.js API endpoints for custom domain management:
 -   **Super Admin as Null Organization**: Prevents RLS circular dependencies and simplifies cross-organization access for super admins
 -   **Zero-Trust Security Model**: Never trust client-provided role/privileges - all authorization controlled server-side
 -   **Mandatory Approval Workflow**: All member signups require explicit admin approval to prevent unauthorized access
+-   **Admin-Controlled Membership Creation**: Memberships created only during admin approval, giving admins full control over year/type assignment
 -   **Vite over Next.js**: Chosen for faster development builds, HMR, and simpler deployment of static files
 -   **Custom Hooks over Context API**: Used for simpler component logic, debugging, and direct Supabase integration
 -   **DNS-Based Domain Verification**: Uses TXT records (ACME standard) for cryptographic proof of domain ownership

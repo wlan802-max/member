@@ -44,7 +44,7 @@ export function SignupFormEnhanced({
 
   const waitForProfile = async (email: string, maxAttempts = 10): Promise<string | null> => {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
@@ -142,39 +142,25 @@ export function SignupFormEnhanced({
     }
 
     try {
-      console.log('Attempting signup with:', { email, firstName, lastName, organizationSlug });
-      
-      const { data: authData, error: authError } = await signUp(email, password, {
+      const { error: authError } = await signUp(email, password, {
         first_name: firstName,
         last_name: lastName,
         organization_slug: organizationSlug
       });
 
       if (authError) {
-        console.error('Signup error:', authError);
-        console.error('Error details:', {
-          message: authError.message,
-          status: authError.status,
-          code: (authError as any).code
-        });
         toast.error(authError.message || 'Failed to create account. Please try again.');
         return;
       }
 
-      console.log('Signup successful, auth data:', authData);
-
-      console.log('Step 1: Waiting for profile creation...');
       toast.info('Creating your profile...');
       const profileId = await waitForProfile(email);
-      console.log('Profile ID received:', profileId);
 
       if (!profileId) {
-        console.error('Profile not found after retries');
         toast.error('Account created but profile not found. Please contact support.');
         return;
       }
 
-      console.log('Step 2: Saving form response...');
       const { error: responseError } = await supabase
         .from('profile_form_responses')
         .insert({
@@ -188,53 +174,11 @@ export function SignupFormEnhanced({
         });
 
       if (responseError) {
-        console.error('Error saving form response:', responseError);
         toast.error('Account created but form data could not be saved.');
         return;
       }
-      console.log('Form response saved successfully');
 
-      // Create membership records for each selected membership type
-      console.log('Step 3: Getting membership year...');
-      const { data: yearData, error: yearError } = await supabase
-        .rpc('get_current_membership_year', { org_id: organizationId });
-
-      if (yearError) {
-        console.error('Error getting membership year:', yearError);
-        toast.error('Account created but membership year could not be determined.');
-        return;
-      }
-      console.log('Membership year data:', yearData);
-
-      // RPC returns integer directly
-      const membershipYear = typeof yearData === 'number' ? yearData : new Date().getFullYear();
-      console.log('Using membership year:', membershipYear);
-
-      // Create membership records for each selected type
-      console.log('Step 4: Preparing membership records...');
-      const membershipRecords = selectedMemberships.map(typeId => ({
-        profile_id: profileId,
-        organization_id: organizationId,
-        membership_type: typeId,
-        membership_year: membershipYear,
-        status: 'pending',
-        amount_paid: 0.00
-      }));
-
-      console.log('Creating membership records:', membershipRecords);
-      const { error: membershipError } = await supabase
-        .from('memberships')
-        .insert(membershipRecords);
-
-      if (membershipError) {
-        console.error('Error creating membership records:', membershipError);
-        console.error('Membership error details:', JSON.stringify(membershipError, null, 2));
-        toast.error(`Account created but membership records could not be created: ${membershipError.message || 'Unknown error'}`);
-        return;
-      }
-      console.log('Membership records created successfully');
-
-      // Trigger email workflows for signup
+      // Trigger email workflows for signup (optional)
       try {
         const { data: workflows, error: workflowError } = await supabase
           .from('email_workflows')
@@ -402,8 +346,8 @@ export function SignupFormEnhanced({
               <ol className="mt-2 list-decimal list-inside space-y-1">
                 <li>Check your email inbox (and spam folder)</li>
                 <li>Click the confirmation link in the email</li>
-                <li>You'll be redirected back to login</li>
-                <li>Your membership is pending admin approval</li>
+                <li>Your account is pending admin approval</li>
+                <li>An admin will review and activate your membership</li>
               </ol>
             </div>
             <Button onClick={onBackToLogin} className="w-full" data-testid="button-back-to-login-success">

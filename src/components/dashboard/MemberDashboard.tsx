@@ -1105,10 +1105,16 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [selectedMemberForNotes, setSelectedMemberForNotes] = useState<any | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState<any>(null);
+  const [selectedMembershipTypes, setSelectedMembershipTypes] = useState<string[]>([]);
+  const [selectedMembershipYears, setSelectedMembershipYears] = useState<number[]>([new Date().getFullYear()]);
+  const [membershipTypes, setMembershipTypes] = useState<any[]>([]);
 
   useEffect(() => {
     fetchMembers();
     fetchPendingUsers();
+    fetchMembershipTypes();
   }, [organizationId]);
 
   const fetchMembers = async () => {
@@ -1155,6 +1161,22 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
     }
   };
 
+  const fetchMembershipTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organization_membership_types')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setMembershipTypes(data || []);
+    } catch (error) {
+      console.error('Error fetching membership types:', error);
+    }
+  };
+
   const handleToggleActive = async (memberId: string, isActive: boolean) => {
     try {
       const { error } = await supabase
@@ -1169,11 +1191,46 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
     }
   };
 
-  const handleApproveUser = async (userId: string, role: 'member' | 'admin' = 'member') => {
+  const handleApproveUser = async (userId: string, role: 'member' | 'admin' = 'member', membershipDetails?: { membershipTypes: string[], membershipYears: number[] }) => {
     try {
-      console.log('Approving user with profile ID:', userId);
-      
-      // Update profile to be active with proper status
+      // Validate that at least one membership is being created
+      if (!membershipDetails || membershipDetails.membershipTypes.length === 0) {
+        toast.error('Please select at least one membership type');
+        return;
+      }
+
+      if (!membershipDetails.membershipYears || membershipDetails.membershipYears.length === 0) {
+        toast.error('Please select at least one membership year');
+        return;
+      }
+
+      // Create membership records for each type/year combination
+      const membershipRecords = [];
+      for (const typeId of membershipDetails.membershipTypes) {
+        for (const year of membershipDetails.membershipYears) {
+          membershipRecords.push({
+            profile_id: userId,
+            organization_id: organizationId,
+            membership_type: typeId,
+            membership_year: year,
+            status: 'active',
+            amount_paid: 0.00
+          });
+        }
+      }
+
+      // Insert memberships first - if this fails, profile stays pending
+      const { error: membershipError } = await supabase
+        .from('memberships')
+        .insert(membershipRecords);
+
+      if (membershipError) {
+        console.error('Membership creation failed:', membershipError);
+        toast.error(`Failed to create memberships: ${membershipError.message}`);
+        return;
+      }
+
+      // Only activate profile after memberships are successfully created
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -1186,45 +1243,23 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
         .eq('id', userId);
 
       if (profileError) {
-        console.error('Profile update error:', profileError);
+        // If profile activation fails, try to clean up the memberships we just created
+        await supabase
+          .from('memberships')
+          .delete()
+          .eq('profile_id', userId)
+          .in('membership_year', membershipDetails.membershipYears);
+        
         throw profileError;
       }
-      console.log('Profile updated successfully');
 
-      // Check memberships before update
-      const { data: beforeUpdate, error: checkError } = await supabase
-        .from('memberships')
-        .select('*')
-        .eq('profile_id', userId);
-      
-      console.log('Memberships before update:', beforeUpdate);
-      if (checkError) console.error('Error checking memberships:', checkError);
-
-      // Update any pending memberships to active
-      const { data: updatedMemberships, error: membershipError } = await supabase
-        .from('memberships')
-        .update({ status: 'active' })
-        .eq('profile_id', userId)
-        .eq('status', 'pending')
-        .select();
-
-      if (membershipError) {
-        console.error('Membership update error:', membershipError);
-        throw membershipError;
-      }
-      console.log('Memberships updated:', updatedMemberships);
-
-      // Check memberships after update
-      const { data: afterUpdate } = await supabase
-        .from('memberships')
-        .select('*')
-        .eq('profile_id', userId);
-      
-      console.log('Memberships after update:', afterUpdate);
-
-      toast.success('User approved successfully');
+      toast.success(`User approved with ${membershipRecords.length} membership(s) created`);
       await fetchMembers();
       await fetchPendingUsers();
+      setShowApprovalModal(false);
+      setPendingApproval(null);
+      setSelectedMembershipTypes([]);
+      setSelectedMembershipYears([new Date().getFullYear()]);
     } catch (error) {
       console.error('Error approving user:', error);
       toast.error('Failed to approve user');
@@ -1449,7 +1484,10 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
                   <Button 
                     size="sm" 
                     variant="default"
-                    onClick={() => handleApproveUser(user.id, 'member')}
+                    onClick={() => {
+                      setPendingApproval({ user, role: 'member' });
+                      setShowApprovalModal(true);
+                    }}
                     data-testid={`button-approve-user-${user.id}`}
                     className="bg-green-600 hover:bg-green-700"
                   >
@@ -1459,7 +1497,10 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => handleApproveUser(user.id, 'admin')}
+                    onClick={() => {
+                      setPendingApproval({ user, role: 'admin' });
+                      setShowApprovalModal(true);
+                    }}
                     data-testid={`button-approve-admin-${user.id}`}
                   >
                     Approve as Admin
@@ -1518,6 +1559,127 @@ function MembersAdminView({ organizationId }: MembersAdminViewProps) {
             setSelectedMemberForNotes(null);
           }}
         />
+      )}
+
+      {showApprovalModal && pendingApproval && (
+        <Dialog open={showApprovalModal} onOpenChange={(open) => {
+          if (!open) {
+            setShowApprovalModal(false);
+            setPendingApproval(null);
+            setSelectedMembershipTypes([]);
+            setSelectedMembershipYears([new Date().getFullYear()]);
+          }
+        }}>
+          <DialogContent className="max-w-2xl" data-testid="modal-approve-member">
+            <DialogHeader>
+              <DialogTitle>Approve Member & Create Memberships</DialogTitle>
+              <DialogDescription>
+                Approving {pendingApproval.user.first_name} {pendingApproval.user.last_name} as {pendingApproval.role}. Select membership type(s) and year to create.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label>Membership Year(s) - Select one or more</Label>
+                <div className="space-y-2 mt-2 border rounded-lg p-4">
+                  {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map((year) => (
+                    <div key={year} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`year-${year}`}
+                        checked={selectedMembershipYears.includes(year)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedMembershipYears([...selectedMembershipYears, year].sort());
+                          } else {
+                            setSelectedMembershipYears(selectedMembershipYears.filter(y => y !== year));
+                          }
+                        }}
+                        data-testid={`checkbox-year-${year}`}
+                      />
+                      <label htmlFor={`year-${year}`} className="text-sm font-medium cursor-pointer">
+                        {year}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Select multiple years for late joiners (e.g., joining in October: select {new Date().getFullYear()} + {new Date().getFullYear() + 1})
+                </p>
+              </div>
+
+              <div>
+                <Label>Membership Types (Select one or more)</Label>
+                <div className="space-y-2 mt-2 border rounded-lg p-4">
+                  {membershipTypes.map((type) => (
+                    <div key={type.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`membership-type-${type.id}`}
+                        checked={selectedMembershipTypes.includes(type.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedMembershipTypes([...selectedMembershipTypes, type.id]);
+                          } else {
+                            setSelectedMembershipTypes(selectedMembershipTypes.filter(id => id !== type.id));
+                          }
+                        }}
+                        data-testid={`checkbox-membership-${type.id}`}
+                      />
+                      <label htmlFor={`membership-type-${type.id}`} className="text-sm font-medium cursor-pointer flex-1">
+                        {type.name} - £{type.price}
+                        {type.description && <span className="text-gray-500 ml-2">({type.description})</span>}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">You can select multiple types (e.g., Adult + Associate)</p>
+              </div>
+
+              <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
+                <p className="font-medium">What happens next:</p>
+                <ul className="mt-2 list-disc list-inside space-y-1">
+                  <li>User's account will be activated</li>
+                  <li>Selected membership(s) will be created</li>
+                  <li>User will be able to log in</li>
+                  <li>You can add more memberships later if needed</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowApprovalModal(false);
+                  setPendingApproval(null);
+                  setSelectedMembershipTypes([]);
+                  setSelectedMembershipYears([new Date().getFullYear()]);
+                }}
+                data-testid="button-cancel-approval"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                onClick={() => {
+                  handleApproveUser(
+                    pendingApproval.user.id,
+                    pendingApproval.role,
+                    {
+                      membershipTypes: selectedMembershipTypes,
+                      membershipYears: selectedMembershipYears
+                    }
+                  );
+                }}
+                data-testid="button-confirm-approval"
+                className="bg-green-600 hover:bg-green-700"
+                disabled={selectedMembershipTypes.length === 0 || selectedMembershipYears.length === 0}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Approve & Create {selectedMembershipTypes.length * selectedMembershipYears.length} Membership(s)
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </Card>
   );
