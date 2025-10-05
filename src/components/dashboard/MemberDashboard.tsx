@@ -230,7 +230,7 @@ export function MemberDashboard() {
       {/* Tab Navigation */}
       {(isAdmin || activeView !== 'dashboard') && (
         <div className="mb-6 border-b border-gray-200">
-          <nav className="flex gap-4">
+          <nav className="flex gap-4 items-center">
             <button
               onClick={() => setActiveView('dashboard')}
               className={`pb-3 px-1 border-b-2 font-medium text-sm ${
@@ -287,162 +287,35 @@ export function MemberDashboard() {
               Documents
             </button>
             {isAdmin && (
-              <>
-                <button
-                  onClick={() => setActiveView('admin-members')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-members'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-members"
+              <div className="ml-auto">
+                <Select
+                  value={activeView.startsWith('admin-') ? activeView : ''}
+                  onValueChange={(value) => setActiveView(value as typeof activeView)}
                 >
-                  Members
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-settings')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-settings'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-settings"
-                >
-                  Organization Settings
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-mailing')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-mailing'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-mailing"
-                >
-                  Mailing List
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-memberships')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-memberships'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-memberships"
-                >
-                  Membership Types
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-forms')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-forms'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-forms"
-                >
-                  Signup Forms
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-workflows')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-workflows'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-workflows"
-                >
-                  Email Workflows
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-email-templates')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-email-templates'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-email-templates"
-                >
-                  Email Templates
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-event-registrations')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-event-registrations'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-event-registrations"
-                >
-                  Event Registrations
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-committees')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-committees'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-admin-committees"
-                >
-                  Committees Management
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-analytics')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-analytics'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-analytics"
-                >
-                  Analytics
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-badges')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-badges'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-admin-badges"
-                >
-                  Badges Management
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-reminders')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-reminders'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-reminders"
-                >
-                  Automated Reminders
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-reports')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-reports'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-custom-reports"
-                >
-                  Custom Reports
-                </button>
-                <button
-                  onClick={() => setActiveView('admin-documents')}
-                  className={`pb-3 px-1 border-b-2 font-medium text-sm ${
-                    activeView === 'admin-documents'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  data-testid="tab-admin-documents"
-                >
-                  Document Library
-                </button>
-              </>
+                  <SelectTrigger 
+                    className="w-64 border-b-2 border-transparent data-[state=open]:border-blue-600"
+                    data-testid="select-admin-menu"
+                  >
+                    <SelectValue placeholder="Admin Menu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin-members">Members</SelectItem>
+                    <SelectItem value="admin-settings">Organization Settings</SelectItem>
+                    <SelectItem value="admin-mailing">Mailing List</SelectItem>
+                    <SelectItem value="admin-memberships">Membership Types</SelectItem>
+                    <SelectItem value="admin-forms">Signup Forms</SelectItem>
+                    <SelectItem value="admin-workflows">Email Workflows</SelectItem>
+                    <SelectItem value="admin-email-templates">Email Templates</SelectItem>
+                    <SelectItem value="admin-event-registrations">Event Registrations</SelectItem>
+                    <SelectItem value="admin-committees">Committees Management</SelectItem>
+                    <SelectItem value="admin-analytics">Analytics</SelectItem>
+                    <SelectItem value="admin-badges">Badges Management</SelectItem>
+                    <SelectItem value="admin-reminders">Automated Reminders</SelectItem>
+                    <SelectItem value="admin-reports">Custom Reports</SelectItem>
+                    <SelectItem value="admin-documents">Document Library</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </nav>
         </div>
